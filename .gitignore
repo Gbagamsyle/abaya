@@ -1,0 +1,15 @@
+node_modules/
+.pnpm-store/
+.next/
+.medusa/
+.sanity/
+.turbo/
+*.tsbuildinfo
+docs/
+.env
+.env.*
+!.env.example
+coverage/
+dist/
+build/
+.DS_Store

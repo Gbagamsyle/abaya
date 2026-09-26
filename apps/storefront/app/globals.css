@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@fenomena/ui/styles.css";
 
 :root {
   color-scheme: light;

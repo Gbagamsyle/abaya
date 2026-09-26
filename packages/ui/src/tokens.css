@@ -1,0 +1,96 @@
+:root {
+  color-scheme: light;
+
+  /* Warm neutrals; garment photography is the primary source of color. */
+  --background: #f7f6f2;
+  --foreground: #292824;
+  --surface: #ffffff;
+  --surface-muted: #f0eee8;
+  --border: #dedbd3;
+  --border-strong: #aaa59a;
+  --muted: #e9e6df;
+  --muted-foreground: #625e56;
+  --accent: #6d5b4f;
+  --accent-hover: #57483f;
+  --accent-foreground: #ffffff;
+  --focus-ring: #315d78;
+  --success: #315e45;
+  --success-subtle: #edf5ef;
+  --success-border: #9bb8a3;
+  --warning: #6e4a0d;
+  --warning-subtle: #faf3e5;
+  --warning-border: #d7bd87;
+  --destructive: #a0322d;
+  --destructive-subtle: #fbefed;
+  --destructive-border: #d5a09c;
+  --image-backdrop: #eeece6;
+
+  /* Semantic spacing scale, in rem. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-7: 2rem;
+  --space-8: 3rem;
+  --space-9: 4.5rem;
+  --page-gutter: clamp(16px, 4.5vw, 40px);
+  --section-space: clamp(48px, 8vw, 112px);
+  --content-max: 1160px;
+  --wide-max: 1440px;
+  --reading-max: 68ch;
+  --header-height: 72px;
+  --control-height: 48px;
+  --radius-control: 2px;
+  --radius-panel: 4px;
+  --shadow-overlay: 0 16px 64px rgb(28 26 22 / 18%);
+
+  /* Fluid type scale. */
+  --type-display-xl: clamp(3.25rem, 10vw, 8rem);
+  --type-display-lg: clamp(2.75rem, 7vw, 5.5rem);
+  --type-h1: clamp(2.25rem, 5vw, 4.5rem);
+  --type-h2: clamp(1.75rem, 3.8vw, 3rem);
+  --type-h3: clamp(1.375rem, 2.4vw, 1.875rem);
+  --type-h4: clamp(1.125rem, 1.8vw, 1.375rem);
+  --type-body-lg: clamp(1.0625rem, 1.5vw, 1.1875rem);
+  --type-body: 1rem;
+  --type-body-sm: 0.875rem;
+  --type-caption: 0.75rem;
+  --type-label: 0.875rem;
+  --type-price: clamp(1rem, 1.35vw, 1.125rem);
+
+  /* Responsive image conventions. */
+  --image-ratio-product: 4 / 5;
+  --image-ratio-editorial-portrait: 3 / 4;
+  --image-ratio-editorial-landscape: 16 / 10;
+  --image-ratio-collection: 5 / 4;
+  --image-ratio-social: 1 / 1;
+}
+
+/* Structural preparation only; light remains the storefront's designed default. */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #242320;
+  --foreground: #f5f3ee;
+  --surface: #2e2c28;
+  --surface-muted: #383630;
+  --border: #504d45;
+  --border-strong: #827c70;
+  --muted: #403d36;
+  --muted-foreground: #c1bbb0;
+  --accent: #c5b2a3;
+  --accent-hover: #d5c6ba;
+  --accent-foreground: #242320;
+  --focus-ring: #9bd1f1;
+  --success: #a6d3b2;
+  --success-subtle: #293b30;
+  --success-border: #587a62;
+  --warning: #e4c37f;
+  --warning-subtle: #403722;
+  --warning-border: #79673e;
+  --destructive: #f0aaa3;
+  --destructive-subtle: #432d2a;
+  --destructive-border: #81544f;
+  --image-backdrop: #393731;
+}

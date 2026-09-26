@@ -12,9 +12,9 @@
     "dev:commerce": "pnpm --filter @fenomena/commerce dev",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
-    "build": "pnpm -r --if-present build",
+    "build": "pnpm -r --if-present --workspace-concurrency=1 build",
     "lint": "pnpm -r --if-present lint",
-    "typecheck": "pnpm -r --if-present typecheck",
+    "typecheck": "pnpm -r --if-present --workspace-concurrency=1 typecheck",
     "test": "pnpm -r --if-present test",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

@@ -103,7 +103,7 @@ Validation includes required titles, slugs, URL checks, and the required `commer
 
 ## Query layer and typings
 
-The project includes Studio query helpers in `apps/studio/lib/queries.ts` and a separate server-side storefront adapter in `apps/storefront/lib/sanity-adapter.ts`. The storefront currently uses raw GROQ strings and hand-maintained adapter result types; Sanity TypeGen is configured in `apps/studio/sanity-typegen.json` and generates schema types in `apps/studio/sanity.types.ts`, but it currently reports zero typed GROQ queries. Do not treat successful schema extraction as verification that the storefront query results are typed or match live content.
+The project includes Studio query helpers in `apps/studio/lib/queries.ts` and a separate server-side storefront adapter in `apps/storefront/lib/sanity-adapter.ts`. Storefront GROQ queries use `defineQuery`, and `apps/studio/sanity-typegen.json` generates schema/query types in `apps/storefront/lib/sanity.types.ts`; the adapter uses those generated query result types and normalizes nullable editorial fields into its domain model. The last TypeGen run generated 26 schema types and 3 GROQ query types.
 
 ## Demo content and constraints
 
@@ -115,4 +115,4 @@ Studio and CLI configuration both resolve `SANITY_STUDIO_PROJECT_ID` / `SANITY_S
 
 ### M5.1 live-data verification status
 
-The configured Sanity project responds to the project ping, and local schema extraction plus TypeGen completed against the local schema (26 schema types, zero GROQ query types). During the current M5.1 review, the storefront's configured `development` dataset returned 404 because it does not exist; the only dataset listed for the authenticated CLI project was `production`, where a read-only query found no published product at slug `luna-abaya`. No Sanity write-token variable was present in the inspected local environment files. Consequently, the Luna editorial document has not been created or linked, and the storefront-to-Medusa live join remains unverified. Match the environment to the intended dataset and create/publish the editorial record through authenticated Studio access before accepting the integration.
+Studio, CLI, TypeGen, and storefront are configured for the existing `production` dataset; no `development` dataset was created. A published `product` document at slug `luna-abaya` is linked to Medusa product `prod_01M3FVF8CJPWV339XVEQJCQYZ9`. It contains only known product identity/editorial text and the commerce reference: no price, SKU, inventory, variant, or media fields. No approved/public Luna media was available in the workspace, so `images` is optional in the schema and the storefront's existing missing-image state is used. Live TypeGen and storefront reads pass; the composed product is non-demo and its transactional price/options/availability come from Medusa.

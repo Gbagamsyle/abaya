@@ -1,3 +1,9 @@
+import { defineQuery } from "groq";
+import type {
+  COLLECTION_QUERYResult,
+  PRODUCT_BY_SLUG_QUERYResult,
+  PRODUCT_QUERYResult,
+} from "./sanity.types";
 import type { SanityEditorialProduct, StorefrontCollectionEntry } from "./domain";
 import { safeHttpUrl } from "./safe-url";
 
@@ -25,51 +31,94 @@ async function querySanity<T>(query: string, params: Record<string, string> = {}
   return payload.result;
 }
 
-const PRODUCT_QUERY = `*[_type == "product" && defined(commerceProductId)]|order(title asc){
+const PRODUCT_QUERY =
+  defineQuery(`*[_type == "product" && defined(commerceProductId)]|order(title asc){
   _id, _updatedAt, title, slug, commerceProductId, shortDescription, newArrival,
   "description": pt::text(description),
   "images": images[]{"url": image.asset->url, "alt": coalesce(alt, "")},
   "collections": collections[]->{_id, title, slug}, material, careInformation, includedItems,
-  socialProof[]{platform, contentUrl, metricValue, metricLabel, verified},
-  "seo": {"title": seo.title, "description": seo.description, canonicalUrl}
-}`;
+  socialProof{platform, contentUrl, metricValue, metricLabel, verified},
+  "seo": {"title": seo.title, "description": seo.description, "canonicalUrl": seo.canonicalUrl}
+}`);
 
-const COLLECTION_QUERY = `*[_type == "collection"]|order(title asc){
+const COLLECTION_QUERY = defineQuery(`*[_type == "collection"]|order(title asc){
   _id, title, slug, description,
   "heroMedia": {"url": heroMedia.asset->url, "alt": coalesce(heroMedia.alt, "")},
   "productIds": productReferences[]._ref,
-  "seo": {"title": seo.title, "description": seo.description, canonicalUrl}
-}`;
+  "seo": {"title": seo.title, "description": seo.description, "canonicalUrl": seo.canonicalUrl}
+}`);
 
-const PRODUCT_BY_SLUG_QUERY = `*[_type == "product" && slug.current == $slug][0]{
+const PRODUCT_BY_SLUG_QUERY = defineQuery(`*[_type == "product" && slug.current == $slug][0]{
   _id, _updatedAt, title, slug, commerceProductId, shortDescription, newArrival,
   "description": pt::text(description),
   "images": images[]{"url": image.asset->url, "alt": coalesce(alt, "")},
   "collections": collections[]->{_id, title, slug}, material, careInformation, includedItems,
-  socialProof[]{platform, contentUrl, metricValue, metricLabel, verified},
-  "seo": {"title": seo.title, "description": seo.description, canonicalUrl}
-}`;
+  socialProof{platform, contentUrl, metricValue, metricLabel, verified},
+  "seo": {"title": seo.title, "description": seo.description, "canonicalUrl": seo.canonicalUrl}
+}`);
+
+type ProductQueryRecord = PRODUCT_QUERYResult[number] | NonNullable<PRODUCT_BY_SLUG_QUERYResult>;
+
+function mapSanityProduct(input: ProductQueryRecord): SanityEditorialProduct {
+  if (!input.title || !input.commerceProductId) {
+    throw new Error("Sanity product is missing its title or Medusa product reference.");
+  }
+
+  const socialProof = input.socialProof
+    ? [
+        {
+          platform: input.socialProof.platform ?? undefined,
+          contentUrl: input.socialProof.contentUrl ?? undefined,
+          metricValue: input.socialProof.metricValue ?? undefined,
+          metricLabel: input.socialProof.metricLabel ?? undefined,
+          verified: input.socialProof.verified ?? undefined,
+        },
+      ]
+    : undefined;
+
+  return {
+    _id: input._id,
+    _updatedAt: input._updatedAt,
+    title: input.title,
+    slug: input.slug ?? undefined,
+    commerceProductId: input.commerceProductId,
+    shortDescription: input.shortDescription ?? undefined,
+    description: input.description ?? undefined,
+    images: input.images?.flatMap((image) =>
+      image.url ? [{ url: image.url, alt: image.alt ?? "" }] : [],
+    ),
+    collections: input.collections?.flatMap((collection) =>
+      collection.title && collection.slug
+        ? [{ _id: collection._id, title: collection.title, slug: collection.slug }]
+        : [],
+    ),
+    material: input.material ?? undefined,
+    careInformation: input.careInformation ?? undefined,
+    includedItems: input.includedItems ?? undefined,
+    socialProof,
+    newArrival: input.newArrival ?? undefined,
+    seo: input.seo
+      ? {
+          title: input.seo.title ?? undefined,
+          description: input.seo.description ?? undefined,
+          canonicalUrl: input.seo.canonicalUrl ?? undefined,
+        }
+      : undefined,
+  };
+}
 
 export async function getSanityProducts() {
-  return querySanity<SanityEditorialProduct[]>(PRODUCT_QUERY);
+  const products = await querySanity<PRODUCT_QUERYResult>(PRODUCT_QUERY);
+  return products.map(mapSanityProduct);
 }
 
 export async function getSanityProductBySlug(slug: string) {
-  return querySanity<SanityEditorialProduct | null>(PRODUCT_BY_SLUG_QUERY, { slug });
+  const product = await querySanity<PRODUCT_BY_SLUG_QUERYResult>(PRODUCT_BY_SLUG_QUERY, { slug });
+  return product ? mapSanityProduct(product) : null;
 }
 
 export async function getSanityCollections() {
-  return querySanity<
-    Array<{
-      _id: string;
-      title: string;
-      slug?: { current?: string } | string;
-      description?: string;
-      heroMedia?: { url?: string; alt?: string };
-      productIds?: string[];
-      seo?: StorefrontCollectionEntry["seo"];
-    }>
-  >(COLLECTION_QUERY);
+  return querySanity<COLLECTION_QUERYResult>(COLLECTION_QUERY);
 }
 
 export function mapSanityCollection(
@@ -77,15 +126,19 @@ export function mapSanityCollection(
 ): StorefrontCollectionEntry {
   return {
     id: input._id,
-    title: input.title,
-    slug: typeof input.slug === "string" ? input.slug : (input.slug?.current ?? ""),
-    description: input.description,
-    heroMedia: input.heroMedia
+    title: input.title ?? "",
+    slug: input.slug?.current ?? "",
+    description: input.description ?? undefined,
+    heroMedia: input.heroMedia.url
       ? { url: input.heroMedia.url, alt: input.heroMedia.alt ?? "" }
       : undefined,
     productIds: input.productIds ?? [],
     seo: input.seo
-      ? { ...input.seo, canonicalUrl: safeHttpUrl(input.seo.canonicalUrl) }
+      ? {
+          title: input.seo.title ?? undefined,
+          description: input.seo.description ?? undefined,
+          canonicalUrl: safeHttpUrl(input.seo.canonicalUrl ?? undefined),
+        }
       : undefined,
   };
 }

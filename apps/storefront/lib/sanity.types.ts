@@ -586,3 +586,104 @@ export type AllSanitySchemaTypes =
   | Slug
   | SanityAssetSourceData;
 export declare const internalGroqTypeReferenceTo: unique symbol;
+// Source: ../storefront/lib/sanity-adapter.ts
+// Variable: PRODUCT_QUERY
+// Query: *[_type == "product" && defined(commerceProductId)]|order(title asc){  _id, _updatedAt, title, slug, commerceProductId, shortDescription, newArrival,  "description": pt::text(description),  "images": images[]{"url": image.asset->url, "alt": coalesce(alt, "")},  "collections": collections[]->{_id, title, slug}, material, careInformation, includedItems,  socialProof{platform, contentUrl, metricValue, metricLabel, verified},  "seo": {"title": seo.title, "description": seo.description, "canonicalUrl": seo.canonicalUrl}}
+export type PRODUCT_QUERYResult = Array<{
+  _id: string;
+  _updatedAt: string;
+  title: string | null;
+  slug: Slug | null;
+  commerceProductId: string;
+  shortDescription: string | null;
+  newArrival: boolean | null;
+  description: string;
+  images: Array<{
+    url: string | null;
+    alt: string | "";
+  }> | null;
+  collections: Array<{
+    _id: string;
+    title: string | null;
+    slug: Slug | null;
+  }> | null;
+  material: string | null;
+  careInformation: string | null;
+  includedItems: Array<string> | null;
+  socialProof: {
+    platform: "instagram" | "tiktok" | null;
+    contentUrl: string | null;
+    metricValue: number | null;
+    metricLabel: string | null;
+    verified: boolean | null;
+  } | null;
+  seo: {
+    title: string | null;
+    description: string | null;
+    canonicalUrl: string | null;
+  };
+}>;
+// Variable: COLLECTION_QUERY
+// Query: *[_type == "collection"]|order(title asc){  _id, title, slug, description,  "heroMedia": {"url": heroMedia.asset->url, "alt": coalesce(heroMedia.alt, "")},  "productIds": productReferences[]._ref,  "seo": {"title": seo.title, "description": seo.description, "canonicalUrl": seo.canonicalUrl}}
+export type COLLECTION_QUERYResult = Array<{
+  _id: string;
+  title: string | null;
+  slug: Slug | null;
+  description: string | null;
+  heroMedia: {
+    url: string | null;
+    alt: "";
+  };
+  productIds: Array<string> | null;
+  seo: {
+    title: string | null;
+    description: string | null;
+    canonicalUrl: string | null;
+  };
+}>;
+// Variable: PRODUCT_BY_SLUG_QUERY
+// Query: *[_type == "product" && slug.current == $slug][0]{  _id, _updatedAt, title, slug, commerceProductId, shortDescription, newArrival,  "description": pt::text(description),  "images": images[]{"url": image.asset->url, "alt": coalesce(alt, "")},  "collections": collections[]->{_id, title, slug}, material, careInformation, includedItems,  socialProof{platform, contentUrl, metricValue, metricLabel, verified},  "seo": {"title": seo.title, "description": seo.description, "canonicalUrl": seo.canonicalUrl}}
+export type PRODUCT_BY_SLUG_QUERYResult = {
+  _id: string;
+  _updatedAt: string;
+  title: string | null;
+  slug: Slug | null;
+  commerceProductId: string | null;
+  shortDescription: string | null;
+  newArrival: boolean | null;
+  description: string;
+  images: Array<{
+    url: string | null;
+    alt: string | "";
+  }> | null;
+  collections: Array<{
+    _id: string;
+    title: string | null;
+    slug: Slug | null;
+  }> | null;
+  material: string | null;
+  careInformation: string | null;
+  includedItems: Array<string> | null;
+  socialProof: {
+    platform: "instagram" | "tiktok" | null;
+    contentUrl: string | null;
+    metricValue: number | null;
+    metricLabel: string | null;
+    verified: boolean | null;
+  } | null;
+  seo: {
+    title: string | null;
+    description: string | null;
+    canonicalUrl: string | null;
+  };
+} | null;
+
+// Query TypeMap
+import "@sanity/client";
+declare module "@sanity/client" {
+  interface SanityQueries {
+    '*[_type == "product" && defined(commerceProductId)]|order(title asc){\n  _id, _updatedAt, title, slug, commerceProductId, shortDescription, newArrival,\n  "description": pt::text(description),\n  "images": images[]{"url": image.asset->url, "alt": coalesce(alt, "")},\n  "collections": collections[]->{_id, title, slug}, material, careInformation, includedItems,\n  socialProof{platform, contentUrl, metricValue, metricLabel, verified},\n  "seo": {"title": seo.title, "description": seo.description, "canonicalUrl": seo.canonicalUrl}\n}': PRODUCT_QUERYResult;
+    '*[_type == "collection"]|order(title asc){\n  _id, title, slug, description,\n  "heroMedia": {"url": heroMedia.asset->url, "alt": coalesce(heroMedia.alt, "")},\n  "productIds": productReferences[]._ref,\n  "seo": {"title": seo.title, "description": seo.description, "canonicalUrl": seo.canonicalUrl}\n}': COLLECTION_QUERYResult;
+    '*[_type == "product" && slug.current == $slug][0]{\n  _id, _updatedAt, title, slug, commerceProductId, shortDescription, newArrival,\n  "description": pt::text(description),\n  "images": images[]{"url": image.asset->url, "alt": coalesce(alt, "")},\n  "collections": collections[]->{_id, title, slug}, material, careInformation, includedItems,\n  socialProof{platform, contentUrl, metricValue, metricLabel, verified},\n  "seo": {"title": seo.title, "description": seo.description, "canonicalUrl": seo.canonicalUrl}\n}': PRODUCT_BY_SLUG_QUERYResult;
+  }
+}

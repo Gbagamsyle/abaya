@@ -129,7 +129,6 @@ export const product = defineType({
       type: "array",
       group: "media",
       of: [{ type: "productMedia" }],
-      validation: (rule) => rule.min(1),
     }),
     defineField({
       name: "videoUrl",

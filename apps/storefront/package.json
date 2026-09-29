@@ -14,6 +14,8 @@
     "@fenomena/ui": "workspace:*",
     "@fenomena/utils": "workspace:*",
     "@medusajs/js-sdk": "2.21.1",
+    "@sanity/client": "^8.9.0",
+    "groq": "^6.17.0",
     "next": "^16.3.6",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

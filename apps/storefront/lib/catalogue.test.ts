@@ -66,10 +66,10 @@ const commerce: MedusaCommerceProduct = {
       manage_inventory: true,
     },
     {
-      id: "v-oat-56",
-      title: "Oat / 56",
+      id: "v-brown-56",
+      title: "Rich Brown / 56",
       options: [
-        { title: "Colour", value: "Oat" },
+        { title: "Colour", value: "Rich Brown" },
         { title: "Size", value: "56" },
       ],
       calculated_price: { calculated_amount: 25900, currency_code: "myr" },
@@ -121,9 +121,9 @@ test("option availability responds to changes in the other selected option", () 
   assert.deepEqual(getAvailableOptionValues(product, { Colour: "Baby Blue" }, "Size"), ["56"]);
   assert.deepEqual(getAvailableOptionValues(product, { Size: "56" }, "Colour"), [
     "Baby Blue",
-    "Oat",
+    "Rich Brown",
   ]);
-  assert.equal(resolveVariant(product, { Colour: "Oat", Size: "56" })?.id, "v-oat-56");
+  assert.equal(resolveVariant(product, { Colour: "Rich Brown", Size: "56" })?.id, "v-brown-56");
 });
 
 test("single-option products resolve a sole default variant", () => {

@@ -78,11 +78,11 @@ const commerce: MedusaCommerceProduct[] = [
         manage_inventory: true,
       },
       {
-        id: "demo-luna-oat-56",
-        title: "Oat / 56",
-        sku: "DEMO-LUNA-OAT-56",
+        id: "demo-luna-brown-56",
+        title: "Rich Brown / 56",
+        sku: "DEMO-LUNA-RICH-BROWN-56",
         options: [
-          { title: "Colour", value: "Oat" },
+          { title: "Colour", value: "Rich Brown" },
           { title: "Size", value: "56" },
         ],
         calculated_price: { calculated_amount: 26000, currency_code: "myr" },

@@ -10,7 +10,6 @@ import {
   linkProductsToSalesChannelWorkflow,
   linkSalesChannelsToApiKeyWorkflow,
   linkSalesChannelsToStockLocationWorkflow,
-  updateProductOptionValuesWorkflow,
   updateProductOptionsWorkflow,
 } from "@medusajs/core-flows";
 import type { MedusaContainer } from "@medusajs/framework/types";
@@ -49,7 +48,6 @@ export default async function seed({ container }: SeedContext) {
   const productModule = container.resolve(Modules.PRODUCT);
   const fulfillmentModule = container.resolve(Modules.FULFILLMENT);
   const inventoryModule = container.resolve(Modules.INVENTORY);
-  const pricingModule = container.resolve(Modules.PRICING);
   const apiKeyModule = container.resolve(Modules.API_KEY);
   const remoteLink = container.resolve(ContainerRegistrationKeys.REMOTE_LINK);
 
@@ -137,38 +135,34 @@ export default async function seed({ container }: SeedContext) {
   }
 
   const currentVariants = product.variants ?? [];
+  const colourOption = product.options?.find((option) => option.title === "Colour");
+  const sizeOption = product.options?.find((option) => option.title === "Size");
+  if (!colourOption || !sizeOption) throw new Error("Luna product options are incomplete.");
+
+  const expectedSkus = new Set(
+    variantStock.map(
+      (item) => `LUNA-${item.colour.replaceAll(" ", "-").toUpperCase()}-${item.size}`,
+    ),
+  );
+  const currentSkus = currentVariants.map((variant) => variant.sku);
   const hasRequestedMatrix =
-    currentVariants.length === variantStock.length &&
-    currentVariants.every((variant) =>
-      variantStock.some(
-        (item) =>
-          variant.sku === `LUNA-${item.colour.replaceAll(" ", "-").toUpperCase()}-${item.size}`,
-      ),
-    );
+    currentVariants.length === expectedSkus.size &&
+    currentSkus.every((sku): sku is string => Boolean(sku)) &&
+    new Set(currentSkus).size === expectedSkus.size &&
+    currentSkus.every((sku) => expectedSkus.has(sku));
+
+  const updateOptionValues = async () => {
+    await updateProductOptionsWorkflow(container).run({
+      input: { selector: { id: colourOption.id }, update: { values: colours } },
+    });
+    await updateProductOptionsWorkflow(container).run({
+      input: { selector: { id: sizeOption.id }, update: { values: sizes } },
+    });
+  };
+
   if (!hasRequestedMatrix) {
     await productModule.deleteProductVariants(currentVariants.map((variant) => variant.id));
-    const colourOption = product.options?.find((option) => option.title === "Colour");
-    const sizeOption = product.options?.find((option) => option.title === "Size");
-    if (!colourOption || !sizeOption) throw new Error("Luna product options are incomplete.");
-    const colourValues = colourOption.values ?? [];
-    const legacyOat = colourValues.find((value) => value.value === "Oat");
-    if (legacyOat) {
-      await updateProductOptionValuesWorkflow(container).run({
-        input: { id: legacyOat.id, update: { value: "Rich Brown" } },
-      });
-    }
-    await updateProductOptionsWorkflow(container).run({
-      input: {
-        selector: { id: colourOption.id },
-        update: { values: colours },
-      },
-    });
-    await updateProductOptionsWorkflow(container).run({
-      input: {
-        selector: { id: sizeOption.id },
-        update: { values: sizes },
-      },
-    });
+    await updateOptionValues();
     await createProductVariantsWorkflow(container).run({
       input: {
         product_variants: variantStock.map((variant) => ({
@@ -182,6 +176,17 @@ export default async function seed({ container }: SeedContext) {
         })),
       },
     });
+  } else {
+    const currentColours = new Set((colourOption.values ?? []).map((value) => value.value));
+    const currentSizes = new Set((sizeOption.values ?? []).map((value) => value.value));
+    if (
+      currentColours.size !== colours.length ||
+      colours.some((colour) => !currentColours.has(colour)) ||
+      currentSizes.size !== sizes.length ||
+      sizes.some((size) => !currentSizes.has(size))
+    ) {
+      await updateOptionValues();
+    }
   }
 
   await linkProductsToSalesChannelWorkflow(container).run({
@@ -276,27 +281,6 @@ export default async function seed({ container }: SeedContext) {
     await createInventoryLevelsWorkflow(container).run({
       input: { inventory_levels: inventoryLevels },
     });
-  }
-
-  for (const priceSet of await pricingModule.listPriceSets({}, { relations: ["prices"] })) {
-    const prices =
-      (
-        priceSet as unknown as {
-          prices?: Array<{ id: string; amount?: number; currency_code?: string }>;
-        }
-      ).prices ?? [];
-    const developmentPrices = prices.filter(
-      (price) => price.currency_code === "myr" && Number(price.amount) === 26000,
-    );
-    if (developmentPrices.length) {
-      await pricingModule.updatePriceSets(priceSet.id, {
-        prices: developmentPrices.map((price) => ({
-          id: price.id,
-          amount: 18500,
-          currency_code: "myr",
-        })),
-      });
-    }
   }
 
   let publishableKey = (

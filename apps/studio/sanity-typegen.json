@@ -1,0 +1,5 @@
+{
+  "path": "../storefront/lib/**/*.ts",
+  "schema": "./schema.json",
+  "generates": "./sanity.types.ts"
+}

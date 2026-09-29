@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "sanity dev",
     "build": "sanity build",
+    "typegen:schema": "sanity schema extract --path ./schema.json",
+    "typegen:generate": "sanity typegen generate",
+    "typegen": "pnpm run typegen:schema && pnpm run typegen:generate",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "tsx --test"

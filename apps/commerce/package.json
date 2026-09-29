@@ -8,10 +8,12 @@
     "start": "medusa start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "node --test"
+    "test": "node --test",
+    "seed:development": "medusa exec src/scripts/seed.ts"
   },
   "dependencies": {
     "@medusajs/dashboard": "^2.21.1",
+    "@medusajs/core-flows": "2.21.1",
     "@medusajs/draft-order": "^2.21.1",
     "@medusajs/admin-sdk": "^2.21.1",
     "@medusajs/framework": "^2.0.0",

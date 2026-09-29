@@ -6,7 +6,7 @@ export const homepageSection = defineType({
   type: "object",
   fields: [
     defineField({
-      name: "_type",
+      name: "sectionType",
       title: "Section type",
       type: "string",
       options: {

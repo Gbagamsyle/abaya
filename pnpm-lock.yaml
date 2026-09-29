@@ -35,6 +35,9 @@ importers:
       '@medusajs/admin-sdk':
         specifier: ^2.21.1
         version: 2.21.1
+      '@medusajs/core-flows':
+        specifier: 2.21.1
+        version: 2.21.1(@medusajs/framework@2.21.1(@medusajs/cli@2.21.1(@types/node@22.20.4))(@types/node@22.20.4)(ioredis@5.11.1)(vite@7.3.6(@types/node@22.20.4)(jiti@1.21.7)(lightningcss@1.32.0)(tsx@4.23.15)(yaml@2.9.1))(zod@4.2.0))
       '@medusajs/dashboard':
         specifier: ^2.21.1
         version: 2.21.1(@emotion/is-prop-valid@1.4.0)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(ajv@8.13.0)(typescript@5.9.3)
@@ -81,6 +84,9 @@ importers:
       '@fenomena/utils':
         specifier: workspace:*
         version: link:../../packages/utils
+      '@medusajs/js-sdk':
+        specifier: 2.21.1
+        version: 2.21.1
       next:
         specifier: ^16.3.6
         version: 16.3.6(@opentelemetry/api@1.9.1)(@types/node@22.20.4)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -147,10 +153,6 @@ importers:
         version: 5.9.3
 
   packages/ui:
-    dependencies:
-      '@fenomena/utils':
-        specifier: workspace:*
-        version: link:../utils
     devDependencies:
       '@types/react':
         specifier: ^18.3.0

@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
+import { safeHttpUrl } from "../lib/safe-url";
+import { CartProvider } from "../components/cart-provider";
 import "./globals.css";
+
+const metadataBaseUrl = safeHttpUrl(process.env.SITE_URL ?? process.env.NEXT_PUBLIC_SITE_URL);
 
 const editorialFont = Cormorant_Garamond({
   subsets: ["latin"],
@@ -18,14 +22,17 @@ const interfaceFont = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Fenomena Abaya — Independent Commerce Concept",
-  description: "An independent, non-official storefront concept in development.",
+  metadataBase: metadataBaseUrl ? new URL(metadataBaseUrl) : undefined,
+  title: "Storefront concept",
+  description: "Independent storefront concept in development.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en">
-      <body className={`${editorialFont.variable} ${interfaceFont.variable}`}>{children}</body>
+      <body className={`${editorialFont.variable} ${interfaceFont.variable}`}>
+        <CartProvider>{children}</CartProvider>
+      </body>
     </html>
   );
 }

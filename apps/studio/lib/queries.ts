@@ -17,7 +17,7 @@ export const homepageQuery = `*[_type == "homepage"][0]{
   title,
   slug,
   sections[]{
-    _type,
+    sectionType,
     title,
     description,
     ctaLabel,

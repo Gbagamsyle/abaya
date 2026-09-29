@@ -1,18 +1,17 @@
-export default function Home() {
+import Link from "next/link";
+
+export default function TemporaryHome() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-5xl flex-col justify-center px-6 py-16">
-      <section aria-labelledby="foundation-title" className="space-y-4">
-        <p className="text-sm text-stone-600">
-          Independent concept · Not an official Fenomena Abaya website
-        </p>
-        <h1 id="foundation-title" className="text-3xl font-semibold tracking-tight text-stone-950">
-          Storefront foundation
-        </h1>
-        <p className="max-w-2xl text-stone-700">
-          The application shell is ready for catalogue and commerce milestones. This neutral
-          placeholder intentionally does not define the production homepage.
-        </p>
-      </section>
+    <main className="temporary-home">
+      <p className="catalogue-eyebrow">Temporary route · homepage milestone pending</p>
+      <h1>Storefront concept</h1>
+      <p>The editorial homepage is intentionally not part of this milestone.</p>
+      <Link className="catalogue-link" href="/shop">
+        Browse the catalogue →
+      </Link>
+      <p className="demo-disclaimer">
+        Independent concept, not an official Fenomena Abaya website.
+      </p>
     </main>
   );
 }

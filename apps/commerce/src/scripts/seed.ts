@@ -10,7 +10,7 @@ import {
   linkProductsToSalesChannelWorkflow,
   linkSalesChannelsToApiKeyWorkflow,
   linkSalesChannelsToStockLocationWorkflow,
-  updateProductOptionsWorkflow,
+  updateProductOptionValuesWorkflow,
 } from "@medusajs/core-flows";
 import type { MedusaContainer } from "@medusajs/framework/types";
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils";
@@ -101,7 +101,7 @@ export default async function seed({ container }: SeedContext) {
   let product = (
     await productModule.listProducts(
       { handle: PRODUCT_HANDLE },
-      { relations: ["options", "variants", "variants.inventory_items"] },
+      { relations: ["options", "options.values", "variants", "variants.inventory_items"] },
     )
   )[0];
   if (!product) {
@@ -151,42 +151,82 @@ export default async function seed({ container }: SeedContext) {
     new Set(currentSkus).size === expectedSkus.size &&
     currentSkus.every((sku) => expectedSkus.has(sku));
 
-  const updateOptionValues = async () => {
-    await updateProductOptionsWorkflow(container).run({
-      input: { selector: { id: colourOption.id }, update: { values: colours } },
+  const legacyOat = colourOption.values?.find((value) => value.value === "Oat");
+  if (legacyOat) {
+    if (colourOption.values?.some((value) => value.value === "Rich Brown")) {
+      throw new Error("Cannot safely replace Luna Oat because Rich Brown already exists.");
+    }
+    await updateProductOptionValuesWorkflow(container).run({
+      input: { id: legacyOat.id, update: { value: "Rich Brown" } },
     });
-    await updateProductOptionsWorkflow(container).run({
-      input: { selector: { id: sizeOption.id }, update: { values: sizes } },
-    });
-  };
+    console.info(
+      "Renamed the legacy Luna Oat option. Re-run the development seed to add variants.",
+    );
+    return;
+  }
+
+  const currentColours = new Set((colourOption.values ?? []).map((value) => value.value));
+  const currentSizes = new Set((sizeOption.values ?? []).map((value) => value.value));
+  const hasOnlyAllowedOptionValues =
+    [...currentColours].every((colour) => colours.includes(colour)) &&
+    [...currentSizes].every((size) => sizes.includes(size));
+  const hasExactOptionValues =
+    currentColours.size === colours.length &&
+    colours.every((colour) => currentColours.has(colour)) &&
+    currentSizes.size === sizes.length &&
+    sizes.every((size) => currentSizes.has(size));
+
+  if (!hasOnlyAllowedOptionValues) {
+    throw new Error("Luna has an unsupported option value; refusing to delete associated values.");
+  }
+
+  if (hasRequestedMatrix && !hasExactOptionValues) {
+    throw new Error("Luna has the expected SKUs but its product option values do not match.");
+  }
 
   if (!hasRequestedMatrix) {
     await productModule.deleteProductVariants(currentVariants.map((variant) => variant.id));
-    await updateOptionValues();
-    await createProductVariantsWorkflow(container).run({
-      input: {
-        product_variants: variantStock.map((variant) => ({
+    if (!hasExactOptionValues) {
+      await productModule.updateProductOptionValuesOnProduct([
+        {
           product_id: product.id,
+          product_option_id: colourOption.id,
+          add: colours.filter((colour) => !currentColours.has(colour)).map((value) => ({ value })),
+        },
+        {
+          product_id: product.id,
+          product_option_id: sizeOption.id,
+          add: sizes.filter((size) => !currentSizes.has(size)).map((value) => ({ value })),
+        },
+      ]);
+      console.info("Added Luna option values. Re-run the development seed to create variants.");
+      return;
+    }
+    const variantsToCreate = await Promise.all(
+      variantStock.map(async (variant) => {
+        const sku = `LUNA-${variant.colour.replaceAll(" ", "-").toUpperCase()}-${variant.size}`;
+        const existingInventoryItem = (await inventoryModule.listInventoryItems({ sku }))[0];
+        return {
           title: `Luna Abaya - ${variant.colour} / ${variant.size}`,
-          sku: `LUNA-${variant.colour.replaceAll(" ", "-").toUpperCase()}-${variant.size}`,
+          sku,
           options: { Colour: variant.colour, Size: variant.size },
           prices: [{ amount: 18500, currency_code: "myr" }],
           manage_inventory: true,
           allow_backorder: false,
+          inventory_items: existingInventoryItem
+            ? [{ inventory_item_id: existingInventoryItem.id, required_quantity: 1 }]
+            : [],
+        };
+      }),
+    );
+    await createProductVariantsWorkflow(container).run({
+      input: {
+        product_variants: variantsToCreate.map((variant) => ({
+          product_id: product.id,
+          ...variant,
         })),
       },
     });
-  } else {
-    const currentColours = new Set((colourOption.values ?? []).map((value) => value.value));
-    const currentSizes = new Set((sizeOption.values ?? []).map((value) => value.value));
-    if (
-      currentColours.size !== colours.length ||
-      colours.some((colour) => !currentColours.has(colour)) ||
-      currentSizes.size !== sizes.length ||
-      sizes.some((size) => !currentSizes.has(size))
-    ) {
-      await updateOptionValues();
-    }
   }
 
   await linkProductsToSalesChannelWorkflow(container).run({
@@ -199,7 +239,7 @@ export default async function seed({ container }: SeedContext) {
   const productWithVariants = (
     await productModule.listProducts(
       { id: product.id },
-      { relations: ["options", "variants", "variants.inventory_items"] },
+      { relations: ["options", "options.values", "variants", "variants.inventory_items"] },
     )
   )[0];
   const inventoryLevels = [];

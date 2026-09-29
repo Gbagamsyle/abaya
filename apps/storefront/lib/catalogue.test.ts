@@ -11,6 +11,7 @@ import {
 import type { MedusaCommerceProduct, SanityEditorialProduct, StorefrontProduct } from "./domain";
 import { createWhatsAppOrderUrl } from "./whatsapp";
 import { DEMO_PRODUCTS } from "./demo-fixtures";
+import { loadCatalogue } from "./catalogue-service";
 
 const editorial: SanityEditorialProduct = {
   _id: "sanity-1",
@@ -106,6 +107,35 @@ test("fictional demo records use the exact storefront composition contract", () 
   );
   assert.equal(typeof DEMO_PRODUCTS[0]?.commerceProductId, "string");
   assert.equal(DEMO_PRODUCTS[0]?.variants[0]?.options.Colour, "Baby Blue");
+});
+
+test("production catalogue mode never falls back to demo fixtures", async () => {
+  const env = process.env as Record<string, string | undefined>;
+  const previous = {
+    catalogueMode: env.CATALOGUE_MODE,
+    nodeEnv: env.NODE_ENV,
+    sanityProjectId: env.SANITY_PROJECT_ID,
+    sanityDataset: env.SANITY_DATASET,
+  };
+  env.CATALOGUE_MODE = "demo";
+  env.NODE_ENV = "production";
+  delete env.SANITY_PROJECT_ID;
+  delete env.SANITY_DATASET;
+
+  try {
+    const result = await loadCatalogue();
+    assert.equal(result.ok, false);
+    if (!result.ok) assert.equal(result.reason, "not-configured");
+  } finally {
+    if (previous.catalogueMode === undefined) delete env.CATALOGUE_MODE;
+    else env.CATALOGUE_MODE = previous.catalogueMode;
+    if (previous.nodeEnv === undefined) delete env.NODE_ENV;
+    else env.NODE_ENV = previous.nodeEnv;
+    if (previous.sanityProjectId === undefined) delete env.SANITY_PROJECT_ID;
+    else env.SANITY_PROJECT_ID = previous.sanityProjectId;
+    if (previous.sanityDataset === undefined) delete env.SANITY_DATASET;
+    else env.SANITY_DATASET = previous.sanityDataset;
+  }
 });
 
 test("variant resolution distinguishes valid and impossible option combinations", () => {

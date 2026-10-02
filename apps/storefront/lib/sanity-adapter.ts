@@ -1,8 +1,10 @@
 import { defineQuery } from "groq";
 import type {
   COLLECTION_QUERYResult,
+  Homepage,
   PRODUCT_BY_SLUG_QUERYResult,
   PRODUCT_QUERYResult,
+  SiteSettings,
 } from "./sanity.types";
 import type { SanityEditorialProduct, StorefrontCollectionEntry } from "./domain";
 import { safeHttpUrl } from "./safe-url";
@@ -30,6 +32,42 @@ async function querySanity<T>(query: string, params: Record<string, string> = {}
   const payload = (await response.json()) as { result: T };
   return payload.result;
 }
+
+const SITE_SETTINGS_QUERY = defineQuery(`*[_type == "siteSettings"][0]{
+  _id,
+  brandName,
+  logo,
+  contactEmail,
+  whatsappNumber,
+  instagramUrl,
+  tiktokUrl,
+  telegramUrl,
+  defaultCurrency,
+  announcementText,
+  announcementEnabled,
+  footerContent,
+  legalLinks
+}`);
+
+const HOMEPAGE_QUERY = defineQuery(`*[_type == "homepage"][0]{
+  _id,
+  title,
+  slug,
+  seo,
+  sections[]{
+    _key,
+    sectionType,
+    title,
+    description,
+    ctaLabel,
+    ctaUrl,
+    collection->{_id, title, slug},
+    productReferences[]->{_id, title, slug, commerceProductId, shortDescription, newArrival,
+      "images": images[]{"url": image.asset->url, "alt": coalesce(alt, "")}
+    },
+    "image": {"url": image.asset->url, "alt": coalesce(image.alt, "")}
+  }
+}`);
 
 const PRODUCT_QUERY =
   defineQuery(`*[_type == "product" && defined(commerceProductId)]|order(title asc){
@@ -105,6 +143,14 @@ function mapSanityProduct(input: ProductQueryRecord): SanityEditorialProduct {
         }
       : undefined,
   };
+}
+
+export async function getSiteSettings(): Promise<SiteSettings | null> {
+  return querySanity<SiteSettings | null>(SITE_SETTINGS_QUERY);
+}
+
+export async function getHomepage(): Promise<Homepage | null> {
+  return querySanity<Homepage | null>(HOMEPAGE_QUERY);
 }
 
 export async function getSanityProducts() {

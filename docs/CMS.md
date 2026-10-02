@@ -63,7 +63,7 @@ Homepage content uses a controlled set of section types instead of an unrestrict
 - social content
 - newsletter
 
-This keeps the homepage manageable for business owners while still giving editors enough flexibility.
+This keeps the homepage manageable for business owners while still giving editors enough flexibility. In the M8 implementation, the homepage is authored as a published Sanity document and rendered onto the root route as a live editorial storefront. Product cards are still composed through the editorial `commerceProductId` join to Medusa and therefore reflect Medusa-owned price and inventory values.
 
 ## Collections and categories
 
@@ -108,6 +108,10 @@ The project includes Studio query helpers in `apps/studio/lib/queries.ts` and a 
 ## Demo content and constraints
 
 Demo content is intentionally marked as reference-only. The Luna Abaya example, if used, is treated as fictional demo reference material and not as production inventory, pricing, or review data.
+
+## Editor workflow and preview status
+
+The M8 homepage uses a published-content workflow that is already compatible with the live `production` dataset. Editors can draft a homepage document in Sanity Studio and then publish it for the storefront to consume. The current environment does not include a configured draft-preview route, Sanity preview endpoint, or Visual Editing/click-to-edit setup. That is not a blocker for M8 acceptance because the milestone is defined by the live homepage render and the actual Sanity-to-Medusa composition chain rather than by draft-only authoring tools.
 
 ## Environment notes
 

@@ -133,8 +133,7 @@ export async function getCheckoutSession(cartId: string): Promise<{
     shipping_options as unknown as Array<Record<string, unknown>>
   ).map((option) => {
     const calculatedPrice = option.calculated_price as
-      | { calculated_amount?: number; currency_code?: string }
-      | undefined;
+      { calculated_amount?: number; currency_code?: string } | undefined;
     return {
       id: String(option.id ?? ""),
       name: String(option.name ?? "Delivery"),

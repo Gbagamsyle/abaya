@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { formatMoney, type StorefrontCart } from "../../lib/cart-types";
 
 type ShippingOption = {
@@ -75,11 +75,6 @@ export default function CheckoutPage() {
     void loadCheckout();
   }, []);
 
-  const selectedShippingOption = useMemo(
-    () => shippingOptions.find((option) => option.id === form.shippingOptionId),
-    [form.shippingOptionId, shippingOptions],
-  );
-
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
@@ -104,7 +99,11 @@ export default function CheckoutPage() {
           shippingOptionId: form.shippingOptionId,
         }),
       });
-      const payload = (await response.json()) as { cart?: StorefrontCart; shippingOptions?: ShippingOption[]; error?: string };
+      const payload = (await response.json()) as {
+        cart?: StorefrontCart;
+        shippingOptions?: ShippingOption[];
+        error?: string;
+      };
       if (!response.ok) {
         throw new Error(payload.error ?? "Unable to save checkout details.");
       }
@@ -148,9 +147,7 @@ export default function CheckoutPage() {
         }}
       >
         <form onSubmit={handleSubmit} style={{ display: "grid", gap: 24 }}>
-          <section
-            style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}
-          >
+          <section style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
             <h2>Contact</h2>
             <label style={{ display: "grid", gap: 6 }}>
               Email
@@ -165,9 +162,7 @@ export default function CheckoutPage() {
             </label>
           </section>
 
-          <section
-            style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}
-          >
+          <section style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
             <h2>Shipping address</h2>
             <div
               style={{
@@ -266,9 +261,7 @@ export default function CheckoutPage() {
             </div>
           </section>
 
-          <section
-            style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}
-          >
+          <section style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 20 }}>
             <h2>Delivery method</h2>
             <div style={{ display: "grid", gap: 12 }}>
               {shippingOptions.length ? (

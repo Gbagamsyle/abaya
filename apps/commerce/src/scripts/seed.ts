@@ -72,8 +72,7 @@ export default async function seed({ container }: SeedContext) {
       ).result[0],
   );
   const salesChannel = await firstOrCreate(
-    async () =>
-      (await salesChannelModule.listSalesChannels({ name: SALES_CHANNEL_NAME }))[0],
+    async () => (await salesChannelModule.listSalesChannels({ name: SALES_CHANNEL_NAME }))[0],
     async () =>
       (
         await createSalesChannelsWorkflow(container).run({
@@ -86,8 +85,7 @@ export default async function seed({ container }: SeedContext) {
       ).result[0],
   );
   const stockLocation = await firstOrCreate(
-    async () =>
-      (await stockLocationModule.listStockLocations({ name: STOCK_LOCATION_NAME }))[0],
+    async () => (await stockLocationModule.listStockLocations({ name: STOCK_LOCATION_NAME }))[0],
     async () =>
       (
         await createStockLocationsWorkflow(container).run({
@@ -107,14 +105,12 @@ export default async function seed({ container }: SeedContext) {
       ).result[0],
   );
   const shippingProfile = await firstOrCreate(
-    async () =>
-      (await fulfillmentModule.listShippingProfiles({ type: "default" }))[0],
+    async () => (await fulfillmentModule.listShippingProfiles({ type: "default" }))[0],
     async () => fulfillmentModule.createShippingProfiles({ name: "Default", type: "default" }),
   );
 
   const fulfillmentSet = await firstOrCreate(
-    async () =>
-      (await fulfillmentModule.listFulfillmentSets({ name: DEV_DELIVERY_SET_NAME }))[0],
+    async () => (await fulfillmentModule.listFulfillmentSets({ name: DEV_DELIVERY_SET_NAME }))[0],
     async () =>
       fulfillmentModule.createFulfillmentSets({
         name: DEV_DELIVERY_SET_NAME,
@@ -142,9 +138,7 @@ export default async function seed({ container }: SeedContext) {
     filters: { id: stockLocation.id },
   });
   const linkedFulfillmentSetIds = (
-    stockLocationsWithFulfillmentSets[0] as
-      | { fulfillment_sets?: Array<{ id: string }> }
-      | undefined
+    stockLocationsWithFulfillmentSets[0] as { fulfillment_sets?: Array<{ id: string }> } | undefined
   )?.fulfillment_sets?.map((set) => set.id);
   if (!linkedFulfillmentSetIds?.includes(fulfillmentSet.id)) {
     await remoteLink.create([

@@ -26,9 +26,15 @@ M6 implements checkout preparation on the same cookie-bound Medusa cart. `/api/c
 
 The development seed creates a Malaysia delivery fulfillment set, links it to the development stock location reachable through the storefront sales channel, and links a development-only MYR price set to the shipping option using Medusa's pricing and remote-link modules. The configured RM15 amount is a development placeholder only, not a verified rate, delivery promise, or Fenomena shipping policy. The seed is idempotent and does not treat CMS data as shipping or price authority. Re-run `pnpm --filter @fenomena/commerce seed:development` against a disposable development database to repair or apply these links. M6 remains pending review; payment provider work and customer authentication/accounts are not part of this milestone.
 
-## Payment abstraction
+## Payment abstraction and M7 Stripe test integration
 
-Use a provider-neutral payment orchestration boundary: create/authorize/capture/refund operations behind the commerce provider contract and use Medusa payment-provider modules/adapters. A provider selection (including Malaysia/Singapore payment methods) is an unresolved business decision. Stripe may be integrated as one adapter, not as an architectural assumption. Verify provider webhooks and make event handling idempotent.
+Medusa remains authoritative for payment collections/sessions, totals, authorization state, and order completion. M7 registers the official Medusa 2.21.1 Stripe provider as `stripe`; the public provider id is `pp_stripe_stripe`. Stripe is a replaceable Medusa adapter, not a storefront payment authority. Stripe keys and the local listener signing secret are test-only and belong in ignored local environment files; `.env.example` values are placeholders only. Never use or report live credentials for M7.
+
+The browser uses Stripe.js Payment Element so PAN/CVC are submitted directly to Stripe and never sent through Next.js or Medusa. Next.js server routes use the httpOnly cart cookie to initialize the Medusa payment session and complete that same cart after browser confirmation. Medusa's returned totals are authoritative. `capture: false` keeps this milestone at authorization and order placement; capture/refund operations remain governed by Medusa's payment lifecycle and are not a storefront responsibility.
+
+For local acceptance, Stripe CLI forwards to `http://localhost:9000/hooks/payment/stripe_stripe`. Use the `whsec_` value printed by the active `stripe listen` process as `STRIPE_WEBHOOK_SECRET`; a Dashboard endpoint secret is not interchangeable with the CLI listener secret. The provider validates the signature against the raw event body. Forward at least `payment_intent.amount_capturable_updated`, `payment_intent.succeeded`, `payment_intent.payment_failed`, and `payment_intent.partially_funded`; the installed provider also maps the related PaymentIntent lifecycle events. Webhook events without this Medusa session's `metadata.session_id` are ignored by the official provider.
+
+M7 acceptance is development/test data only and must exercise successful authorization, decline/retry recovery, repeat-submit protection, empty/stale cart rejection, and Medusa-authoritative totals before this milestone is approved. This does not authorize production payments, capture automation, customer accounts, or merchant onboarding.
 
 ## Order lifecycle
 

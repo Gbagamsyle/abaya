@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import StripePaymentForm from "../../components/stripe-payment-form";
 import { formatMoney, type StorefrontCart } from "../../lib/cart-types";
 
 type ShippingOption = {
@@ -45,7 +46,13 @@ export default function CheckoutPage() {
   const [form, setForm] = useState<CheckoutFormState>(emptyForm);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [checkoutSaved, setCheckoutSaved] = useState(false);
   const [error, setError] = useState<string>();
+
+  function editForm(update: (current: CheckoutFormState) => CheckoutFormState) {
+    setForm(update);
+    setCheckoutSaved(false);
+  }
 
   useEffect(() => {
     async function loadCheckout() {
@@ -79,6 +86,7 @@ export default function CheckoutPage() {
     event.preventDefault();
     setSubmitting(true);
     setError(undefined);
+    setCheckoutSaved(false);
     try {
       const response = await fetch("/api/checkout", {
         method: "POST",
@@ -109,6 +117,7 @@ export default function CheckoutPage() {
       }
       if (payload.cart) setCart(payload.cart);
       if (payload.shippingOptions) setShippingOptions(payload.shippingOptions);
+      setCheckoutSaved(true);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Unable to save checkout details.");
     } finally {
@@ -155,7 +164,7 @@ export default function CheckoutPage() {
                 type="email"
                 value={form.email}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, email: event.target.value }))
+                  editForm((current) => ({ ...current, email: event.target.value }))
                 }
                 required
               />
@@ -176,7 +185,7 @@ export default function CheckoutPage() {
                 <input
                   value={form.first_name}
                   onChange={(event) =>
-                    setForm((current) => ({ ...current, first_name: event.target.value }))
+                    editForm((current) => ({ ...current, first_name: event.target.value }))
                   }
                   required
                 />
@@ -186,7 +195,7 @@ export default function CheckoutPage() {
                 <input
                   value={form.last_name}
                   onChange={(event) =>
-                    setForm((current) => ({ ...current, last_name: event.target.value }))
+                    editForm((current) => ({ ...current, last_name: event.target.value }))
                   }
                   required
                 />
@@ -196,7 +205,7 @@ export default function CheckoutPage() {
                 <input
                   value={form.phone}
                   onChange={(event) =>
-                    setForm((current) => ({ ...current, phone: event.target.value }))
+                    editForm((current) => ({ ...current, phone: event.target.value }))
                   }
                 />
               </label>
@@ -205,7 +214,7 @@ export default function CheckoutPage() {
                 <input
                   value={form.address_1}
                   onChange={(event) =>
-                    setForm((current) => ({ ...current, address_1: event.target.value }))
+                    editForm((current) => ({ ...current, address_1: event.target.value }))
                   }
                   required
                 />
@@ -215,7 +224,7 @@ export default function CheckoutPage() {
                 <input
                   value={form.address_2}
                   onChange={(event) =>
-                    setForm((current) => ({ ...current, address_2: event.target.value }))
+                    editForm((current) => ({ ...current, address_2: event.target.value }))
                   }
                 />
               </label>
@@ -224,7 +233,7 @@ export default function CheckoutPage() {
                 <input
                   value={form.city}
                   onChange={(event) =>
-                    setForm((current) => ({ ...current, city: event.target.value }))
+                    editForm((current) => ({ ...current, city: event.target.value }))
                   }
                   required
                 />
@@ -234,7 +243,7 @@ export default function CheckoutPage() {
                 <input
                   value={form.province}
                   onChange={(event) =>
-                    setForm((current) => ({ ...current, province: event.target.value }))
+                    editForm((current) => ({ ...current, province: event.target.value }))
                   }
                 />
               </label>
@@ -243,7 +252,7 @@ export default function CheckoutPage() {
                 <input
                   value={form.postal_code}
                   onChange={(event) =>
-                    setForm((current) => ({ ...current, postal_code: event.target.value }))
+                    editForm((current) => ({ ...current, postal_code: event.target.value }))
                   }
                   required
                 />
@@ -253,7 +262,7 @@ export default function CheckoutPage() {
                 <input
                   value={form.country_code}
                   onChange={(event) =>
-                    setForm((current) => ({ ...current, country_code: event.target.value }))
+                    editForm((current) => ({ ...current, country_code: event.target.value }))
                   }
                   required
                 />
@@ -283,7 +292,7 @@ export default function CheckoutPage() {
                         name="shippingOption"
                         checked={form.shippingOptionId === option.id}
                         onChange={() =>
-                          setForm((current) => ({ ...current, shippingOptionId: option.id }))
+                          editForm((current) => ({ ...current, shippingOptionId: option.id }))
                         }
                       />
                       <span>{option.name}</span>
@@ -305,18 +314,19 @@ export default function CheckoutPage() {
             </p>
           ) : null}
 
+          {checkoutSaved ? <StripePaymentForm total={cart.total} /> : null}
+
           <button
             type="submit"
             disabled={submitting}
             style={{ padding: "0.9rem 1.2rem", fontWeight: 700 }}
           >
-            {submitting ? "Saving…" : "Review order"}
+            {submitting ? "Saving…" : checkoutSaved ? "Update checkout details" : "Review order"}
           </button>
         </form>
 
         <aside
           style={{
-            border: "1px solid #e5e7eb",
             borderRadius: 12,
             padding: 20,
             alignSelf: "start",

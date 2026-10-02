@@ -11,6 +11,7 @@ import {
   linkSalesChannelsToApiKeyWorkflow,
   linkSalesChannelsToStockLocationWorkflow,
   updateProductOptionValuesWorkflow,
+  updateRegionsWorkflow,
 } from "@medusajs/core-flows";
 import type { MedusaContainer } from "@medusajs/framework/types";
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils";
@@ -67,10 +68,27 @@ export default async function seed({ container }: SeedContext) {
     async () =>
       (
         await createRegionsWorkflow(container).run({
-          input: { regions: [{ name: REGION_NAME, currency_code: "myr", countries: ["my"] }] },
+          input: {
+            regions: [
+              {
+                name: REGION_NAME,
+                currency_code: "myr",
+                countries: ["my"],
+                ...(process.env.STRIPE_API_KEY ? { payment_providers: ["pp_stripe_stripe"] } : {}),
+              },
+            ],
+          },
         })
       ).result[0],
   );
+  if (process.env.STRIPE_API_KEY) {
+    await updateRegionsWorkflow(container).run({
+      input: {
+        selector: { id: region.id },
+        update: { payment_providers: ["pp_stripe_stripe"] },
+      },
+    });
+  }
   const salesChannel = await firstOrCreate(
     async () => (await salesChannelModule.listSalesChannels({ name: SALES_CHANNEL_NAME }))[0],
     async () =>

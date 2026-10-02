@@ -12,12 +12,13 @@
     "seed:development": "medusa exec src/scripts/seed.ts"
   },
   "dependencies": {
-    "@medusajs/dashboard": "^2.21.1",
-    "@medusajs/core-flows": "2.21.1",
-    "@medusajs/draft-order": "^2.21.1",
     "@medusajs/admin-sdk": "^2.21.1",
+    "@medusajs/core-flows": "2.21.1",
+    "@medusajs/dashboard": "^2.21.1",
+    "@medusajs/draft-order": "^2.21.1",
     "@medusajs/framework": "^2.0.0",
     "@medusajs/medusa": "^2.0.0",
+    "dotenv": "^18.0.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

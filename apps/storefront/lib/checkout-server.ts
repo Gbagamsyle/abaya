@@ -1,5 +1,6 @@
 import Medusa from "@medusajs/js-sdk";
 import type { CartMoney, StorefrontCart } from "./cart-types";
+import { createIdempotencyGate } from "./idempotency";
 import { getCart } from "./cart-server";
 
 export type CheckoutAddress = {
@@ -33,6 +34,40 @@ export type CheckoutValidationResult = {
   clean?: CheckoutPayload;
   errors: string[];
 };
+
+export const STRIPE_PROVIDER_ID = "pp_stripe_stripe";
+
+export type PaymentReadyCart = {
+  id: string;
+  email?: string;
+  items?: unknown[];
+  shipping_methods?: unknown[];
+  total?: number;
+  currency_code?: string;
+  payment_collection?: {
+    payment_sessions?: Array<{
+      provider_id?: string;
+      data?: Record<string, unknown>;
+    }>;
+  };
+};
+
+export type CheckoutCompletion =
+  { type: "order"; orderId: string; displayId?: number } | { type: "cart"; message: string };
+
+const runCheckoutCompletion = createIdempotencyGate<CheckoutCompletion>(
+  (result) => result.type === "order",
+);
+
+export function validatePaymentReadyCart(cart: PaymentReadyCart) {
+  if (!cart.items?.length) throw new Error("Your bag is empty.");
+  if (!cart.email || !cart.shipping_methods?.length) {
+    throw new Error("Complete your contact and delivery details before payment.");
+  }
+  if (!Number.isFinite(cart.total) || (cart.total ?? 0) <= 0) {
+    throw new Error("This order total cannot be paid by card.");
+  }
+}
 
 function configured() {
   const baseUrl = process.env.MEDUSA_BACKEND_URL;
@@ -195,4 +230,61 @@ export async function setCheckoutShippingMethod(cartId: string, shippingOptionId
 
 export function formatCheckoutMoney(amount: number, currency: string) {
   return moneyFromCents(amount, currency);
+}
+
+export async function createStripePaymentSession(cartId: string): Promise<{
+  clientSecret: string;
+  total: CartMoney;
+}> {
+  const { cart: source } = await sdk().store.cart.retrieve(cartId, {
+    fields:
+      "id,email,total,items.id,shipping_methods.id,*payment_collection,*payment_collection.payment_sessions",
+  } as never);
+  const cart = source as unknown as PaymentReadyCart;
+  validatePaymentReadyCart(cart);
+
+  const { payment_collection: collection } = await sdk().store.payment.initiatePaymentSession(
+    cart as never,
+    { provider_id: STRIPE_PROVIDER_ID },
+    { fields: "id,*payment_sessions" } as never,
+  );
+  const session = (collection.payment_sessions ?? []).find(
+    (candidate) => candidate.provider_id === STRIPE_PROVIDER_ID,
+  );
+  const clientSecret = session?.data?.client_secret;
+  if (typeof clientSecret !== "string" || !clientSecret) {
+    throw new Error("Medusa did not return a Stripe payment session.");
+  }
+
+  return {
+    clientSecret,
+    total: moneyFromCents(cart.total, cart.currency_code),
+  };
+}
+
+async function completeMedusaCart(cartId: string): Promise<CheckoutCompletion> {
+  const result = (await sdk().store.cart.complete(cartId, {
+    fields: "id,display_id,email,total,currency_code,created_at",
+  } as never)) as unknown as {
+    type: "cart" | "order";
+    error?: { message?: string };
+    order?: { id?: string; display_id?: number };
+  };
+
+  if (result.type !== "order" || !result.order?.id) {
+    return {
+      type: "cart",
+      message: result.error?.message ?? "Payment is not yet authorized. Retry in a moment.",
+    };
+  }
+
+  return {
+    type: "order",
+    orderId: result.order.id,
+    displayId: result.order.display_id,
+  };
+}
+
+export function completeCheckoutCart(cartId: string): Promise<CheckoutCompletion> {
+  return runCheckoutCompletion(cartId, () => completeMedusaCart(cartId));
 }

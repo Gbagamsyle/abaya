@@ -213,7 +213,9 @@ function CartDrawer() {
           <Link className="catalogue-link" href="/cart" onClick={closeDrawer}>
             View bag
           </Link>
-          <span className="cart-checkout-note">Checkout follows in a later milestone.</span>
+          <Link className="catalogue-link" href="/checkout" onClick={closeDrawer}>
+            Continue to checkout →
+          </Link>
         </div>
       ) : null}
     </Drawer>

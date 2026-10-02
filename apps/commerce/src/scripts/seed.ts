@@ -20,6 +20,12 @@ const SALES_CHANNEL_NAME = "Fenomena Storefront";
 const STOCK_LOCATION_NAME = "Fenomena Main Stock";
 const PRODUCT_HANDLE = "luna-abaya";
 const PUBLISHABLE_KEY_TITLE = "Fenomena Storefront";
+const DEV_DELIVERY_SET_NAME = "Malaysia Delivery";
+const DEV_SERVICE_ZONE_NAME = "Malaysia";
+const DEV_SHIPPING_OPTION_NAME = "Standard Delivery";
+const DEV_SHIPPING_OPTION_TYPE_CODE = "delivery";
+const DEV_SHIPPING_NOTE =
+  "Development-only shipping placeholder; not a Fenomena shipping policy or live rate.";
 
 const colours = ["Baby Blue", "Rich Brown", "Silver Grey"];
 const sizes = ["52", "54", "56", "58", "60"];
@@ -36,9 +42,12 @@ type SeedContext = { container: MedusaContainer };
 
 async function firstOrCreate<T>(
   existing: () => Promise<T | undefined>,
-  create: () => Promise<T>,
+  create: () => Promise<T | T[]>,
 ): Promise<T> {
-  return (await existing()) ?? create();
+  const current = await existing();
+  if (current) return current;
+  const created = await create();
+  return Array.isArray(created) ? created[0] : created;
 }
 
 export default async function seed({ container }: SeedContext) {
@@ -47,9 +56,11 @@ export default async function seed({ container }: SeedContext) {
   const stockLocationModule = container.resolve(Modules.STOCK_LOCATION);
   const productModule = container.resolve(Modules.PRODUCT);
   const fulfillmentModule = container.resolve(Modules.FULFILLMENT);
+  const pricingModule = container.resolve(Modules.PRICING);
   const inventoryModule = container.resolve(Modules.INVENTORY);
   const apiKeyModule = container.resolve(Modules.API_KEY);
   const remoteLink = container.resolve(ContainerRegistrationKeys.REMOTE_LINK);
+  const query = container.resolve(ContainerRegistrationKeys.QUERY);
 
   const region = await firstOrCreate(
     async () => (await regionModule.listRegions({ name: REGION_NAME }))[0],
@@ -61,7 +72,8 @@ export default async function seed({ container }: SeedContext) {
       ).result[0],
   );
   const salesChannel = await firstOrCreate(
-    async () => (await salesChannelModule.listSalesChannels({ name: SALES_CHANNEL_NAME }))[0],
+    async () =>
+      (await salesChannelModule.listSalesChannels({ name: SALES_CHANNEL_NAME }))[0],
     async () =>
       (
         await createSalesChannelsWorkflow(container).run({
@@ -74,7 +86,8 @@ export default async function seed({ container }: SeedContext) {
       ).result[0],
   );
   const stockLocation = await firstOrCreate(
-    async () => (await stockLocationModule.listStockLocations({ name: STOCK_LOCATION_NAME }))[0],
+    async () =>
+      (await stockLocationModule.listStockLocations({ name: STOCK_LOCATION_NAME }))[0],
     async () =>
       (
         await createStockLocationsWorkflow(container).run({
@@ -94,9 +107,120 @@ export default async function seed({ container }: SeedContext) {
       ).result[0],
   );
   const shippingProfile = await firstOrCreate(
-    async () => (await fulfillmentModule.listShippingProfiles({ type: "default" }))[0],
+    async () =>
+      (await fulfillmentModule.listShippingProfiles({ type: "default" }))[0],
     async () => fulfillmentModule.createShippingProfiles({ name: "Default", type: "default" }),
   );
+
+  const fulfillmentSet = await firstOrCreate(
+    async () =>
+      (await fulfillmentModule.listFulfillmentSets({ name: DEV_DELIVERY_SET_NAME }))[0],
+    async () =>
+      fulfillmentModule.createFulfillmentSets({
+        name: DEV_DELIVERY_SET_NAME,
+        type: "delivery",
+      } as never),
+  );
+  const serviceZone = await firstOrCreate(
+    async () =>
+      (
+        await fulfillmentModule.listServiceZones({
+          name: DEV_SERVICE_ZONE_NAME,
+          fulfillment_set: { id: fulfillmentSet.id },
+        })
+      )[0],
+    async () =>
+      fulfillmentModule.createServiceZones({
+        name: DEV_SERVICE_ZONE_NAME,
+        fulfillment_set_id: fulfillmentSet.id,
+        geo_zones: [{ type: "country", country_code: "my" }],
+      } as never),
+  );
+  const { data: stockLocationsWithFulfillmentSets } = await query.graph({
+    entity: "stock_locations",
+    fields: ["id", "fulfillment_sets.id"],
+    filters: { id: stockLocation.id },
+  });
+  const linkedFulfillmentSetIds = (
+    stockLocationsWithFulfillmentSets[0] as
+      | { fulfillment_sets?: Array<{ id: string }> }
+      | undefined
+  )?.fulfillment_sets?.map((set) => set.id);
+  if (!linkedFulfillmentSetIds?.includes(fulfillmentSet.id)) {
+    await remoteLink.create([
+      {
+        [Modules.STOCK_LOCATION]: { stock_location_id: stockLocation.id },
+        [Modules.FULFILLMENT]: { fulfillment_set_id: fulfillmentSet.id },
+      },
+    ]);
+  }
+  const shippingOptionType = await firstOrCreate(
+    async () =>
+      (
+        await fulfillmentModule.listShippingOptionTypes({
+          code: DEV_SHIPPING_OPTION_TYPE_CODE,
+        })
+      )[0],
+    async () =>
+      fulfillmentModule.createShippingOptionTypes({
+        label: "Delivery",
+        code: DEV_SHIPPING_OPTION_TYPE_CODE,
+      } as never),
+  );
+
+  const shippingOption = await firstOrCreate(
+    async () =>
+      (
+        await fulfillmentModule.listShippingOptions({
+          name: DEV_SHIPPING_OPTION_NAME,
+          shipping_profile_id: shippingProfile.id,
+          service_zone: { id: serviceZone.id },
+        })
+      )[0],
+    async () =>
+      fulfillmentModule.createShippingOptions({
+        name: DEV_SHIPPING_OPTION_NAME,
+        price_type: "flat",
+        service_zone_id: serviceZone.id,
+        shipping_profile_id: shippingProfile.id,
+        provider_id: "manual_manual",
+        shipping_option_type_id: shippingOptionType.id,
+        data: {
+          type: "flat",
+          amount: 1500,
+          currency_code: "myr",
+          note: DEV_SHIPPING_NOTE,
+        },
+        prices: [{ amount: 1500, currency_code: "myr" }],
+        metadata: { development_only: true, note: DEV_SHIPPING_NOTE },
+      } as never),
+  );
+
+  const { data: linkedShippingOptions } = await query.graph({
+    entity: "shipping_options",
+    fields: ["id", "price_set_link.price_set.id"],
+    filters: { id: shippingOption.id },
+  });
+  const linkedPriceSetId = (
+    linkedShippingOptions[0] as { price_set_link?: { price_set?: { id?: string } } } | undefined
+  )?.price_set_link?.price_set?.id;
+  let shippingPriceSetId = linkedPriceSetId;
+  if (shippingPriceSetId) {
+    await pricingModule.updatePriceSets(shippingPriceSetId, {
+      prices: [{ amount: 1500, currency_code: "myr", rules: {} }],
+    });
+  } else {
+    const shippingPriceSet = await pricingModule.createPriceSets({
+      prices: [{ amount: 1500, currency_code: "myr", rules: {} }],
+    });
+    shippingPriceSetId = shippingPriceSet.id;
+    await remoteLink.create([
+      {
+        [Modules.FULFILLMENT]: { shipping_option_id: shippingOption.id },
+        [Modules.PRICING]: { price_set_id: shippingPriceSetId },
+      },
+    ]);
+  }
 
   let product = (
     await productModule.listProducts(
@@ -345,6 +469,13 @@ export default async function seed({ container }: SeedContext) {
         regionId: region.id,
         salesChannelId: salesChannel.id,
         stockLocationId: stockLocation.id,
+        package: {
+          fulfillmentSetId: fulfillmentSet.id,
+          serviceZoneId: serviceZone.id,
+          shippingOptionId: shippingOption.id,
+          shippingOptionTypeCode: DEV_SHIPPING_OPTION_TYPE_CODE,
+          note: DEV_SHIPPING_NOTE,
+        },
         productId: product.id,
         publishableKey: publishableKey.token,
         storefrontEnv: {

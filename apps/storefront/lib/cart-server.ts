@@ -26,6 +26,8 @@ type MedusaCart = {
     product?: { title?: string; thumbnail?: string };
   }>;
   subtotal?: number;
+  item_subtotal?: number;
+  shipping_total?: number;
   total?: number;
   currency_code?: string;
 };
@@ -48,7 +50,10 @@ function sdk() {
 }
 
 function query() {
-  return { fields: "+items.*,*items.product,*items.variant,*items.variant.options" };
+  return {
+    fields:
+      "+items.*,*items.product,*items.variant,*items.variant.options,subtotal,item_subtotal,shipping_total,total",
+  };
 }
 
 function money(amount: number | undefined, currency: string | undefined) {
@@ -93,6 +98,8 @@ export function transformCart(source: MedusaCart): StorefrontCart {
     items,
     itemCount: items.reduce((count, item) => count + item.quantity, 0),
     subtotal: money(source.subtotal, currency),
+    itemSubtotal: money(source.item_subtotal, currency),
+    shippingTotal: money(source.shipping_total, currency),
     total: money(source.total, currency),
   };
 }

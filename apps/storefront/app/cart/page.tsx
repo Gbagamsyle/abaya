@@ -72,11 +72,15 @@ export default function CartPage() {
               ))}
             </div>
             <aside className="cart-page__summary">
-              <span>Subtotal</span>
+              <span>Items subtotal</span>
+              <strong>{formatMoney(cart.itemSubtotal)}</strong>
+              <span>Shipping</span>
+              <strong>{formatMoney(cart.shippingTotal)}</strong>
+              <span>Total</span>
               <strong>{formatMoney(cart.subtotal)}</strong>
-              <Button type="button" disabled>
-                Checkout
-              </Button>
+              <Link className="catalogue-link" href="/checkout">
+                <Button type="button">Checkout</Button>
+              </Link>
               <Link className="catalogue-link" href="/shop">
                 Continue shopping →
               </Link>

@@ -20,7 +20,11 @@ The development bootstrap is `pnpm --filter @fenomena/commerce exec medusa db:se
 
 Review the seed against a disposable development database before running it. Variant-matrix repair currently deletes the product's existing variants when its check fails, and must never target production or a database with real orders. The script must not mutate unrelated price sets; prices belong to the specific development Luna product only.
 
-Medusa 2.21.1 returns MYR prices and cart totals as integer minor units: `18500` represents RM185. The storefront converts this once at the Medusa adapter boundary to `185` for display and never recomputes cart totals in the UI. M5.1 browser acceptance rendered RM185 on the PDP, drawer, and `/cart`; a zero-stock add request was rejected and did not alter the existing cart. Checkout remains disabled and out of scope.
+Medusa 2.21.1 returns MYR prices and cart totals as integer minor units: `18500` represents RM185. The storefront converts this once at the Medusa adapter boundary to `185` for display and never recomputes cart totals in the UI. M5.1 browser acceptance rendered RM185 on the PDP, drawer, and `/cart`; a zero-stock add request was rejected and did not alter the existing cart.
+
+M6 implements checkout preparation on the same cookie-bound Medusa cart. `/api/checkout` reads the `fenomena_cart_id` cookie server-side, rejects empty carts, retrieves cart-specific delivery choices from Medusa, validates contact and shipping-address input, updates the Medusa cart, and attaches only a Medusa-returned shipping option. The browser receives Medusa's item subtotal, shipping total, and final cart total; it does not calculate or persist authoritative totals. Invalid shipping selections are rejected by Medusa, and cart IDs for which Medusa returns HTTP 404 are cleared from the cookie. Checkout ends at order review: it does not place an order, authorize or capture payment, or require a customer account.
+
+The development seed creates a Malaysia delivery fulfillment set, links it to the development stock location reachable through the storefront sales channel, and links a development-only MYR price set to the shipping option using Medusa's pricing and remote-link modules. The configured RM15 amount is a development placeholder only, not a verified rate, delivery promise, or Fenomena shipping policy. The seed is idempotent and does not treat CMS data as shipping or price authority. Re-run `pnpm --filter @fenomena/commerce seed:development` against a disposable development database to repair or apply these links. M6 remains pending review; payment provider work and customer authentication/accounts are not part of this milestone.
 
 ## Payment abstraction
 
@@ -40,7 +44,7 @@ Promotions and transactional eligibility live in Medusa. Validate code, dates, m
 
 ## Fulfillment
 
-Medusa owns fulfillment status and fulfillment data. Shipping carriers, rates, markets, delivery promises, returns, and service areas are unselected. Do not display shipping or return claims until reviewed, configured, and represented in authoritative policy content.
+Medusa owns fulfillment status and fulfillment data. M6 uses a clearly marked development-only placeholder option to exercise cart-specific shipping selection; it does not establish production carriers, rates, markets, delivery promises, returns, or service areas. Do not display shipping or return claims until reviewed, configured, and represented in authoritative policy content.
 
 ## Tests and invariants
 

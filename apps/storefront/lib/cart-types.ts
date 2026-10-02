@@ -20,6 +20,8 @@ export type StorefrontCart = {
   items: StorefrontCartItem[];
   itemCount: number;
   subtotal: CartMoney;
+  itemSubtotal: CartMoney;
+  shippingTotal: CartMoney;
   total: CartMoney;
 };
 

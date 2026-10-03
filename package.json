@@ -10,7 +10,7 @@
     "dev:storefront": "pnpm --filter @fenomena/storefront dev",
     "dev:studio": "pnpm --filter @fenomena/studio dev",
     "dev:commerce": "pnpm --filter @fenomena/commerce dev",
-    "db:up": "docker compose up -d postgres",
+    "db:up": "docker compose up -d postgres redis",
     "db:down": "docker compose down",
     "build": "pnpm -r --if-present --workspace-concurrency=1 build",
     "lint": "pnpm -r --if-present lint",

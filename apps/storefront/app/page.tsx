@@ -11,6 +11,8 @@ import {
 } from "../lib/homepage";
 import { getHomepage, getSiteSettings } from "../lib/sanity-adapter";
 
+export const dynamic = "force-dynamic";
+
 type ResolvedImage = { url?: string; alt?: string };
 type ResolvedProductReference = {
   _id?: string;

@@ -37,18 +37,56 @@ const stripeProvider = stripeApiKey
     }
   : undefined;
 
+const workerModes = ["shared", "server", "worker"] as const;
+type WorkerMode = (typeof workerModes)[number];
+const configuredWorkerMode = process.env.MEDUSA_WORKER_MODE ?? "shared";
+if (!workerModes.includes(configuredWorkerMode as WorkerMode)) {
+  throw new Error("MEDUSA_WORKER_MODE must be one of: shared, server, worker.");
+}
+const workerMode = configuredWorkerMode as WorkerMode;
+
+const redisUrl = configured("REDIS_URL", "redis://localhost:6379");
+
 export default defineConfig({
   modules: [
+    {
+      resolve: "@medusajs/medusa/event-bus-redis",
+      options: { redisUrl },
+    },
+    {
+      resolve: "@medusajs/medusa/cache-redis",
+      options: { redisUrl },
+    },
+    {
+      resolve: "@medusajs/medusa/workflow-engine-redis",
+      options: { redis: { redisUrl } },
+    },
+    {
+      resolve: "@medusajs/medusa/locking",
+      options: {
+        providers: [
+          {
+            id: "locking-redis",
+            resolve: "@medusajs/medusa/locking-redis",
+            is_default: true,
+            options: { redisUrl },
+          },
+        ],
+      },
+    },
     {
       resolve: "@medusajs/medusa/payment",
       options: { providers: stripeProvider ? [stripeProvider] : [] },
     },
   ],
   projectConfig: {
+    workerMode,
     databaseUrl: configured(
       "DATABASE_URL",
       "postgresql://postgres:replace-for-local-development@localhost:5432/fenomena",
     ),
+    redisUrl,
+    redisPrefix: process.env.REDIS_PREFIX ?? "medusa:",
     http: {
       storeCors: process.env.STORE_CORS ?? "http://localhost:3000",
       adminCors: process.env.ADMIN_CORS ?? "http://localhost:9000",

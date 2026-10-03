@@ -6,6 +6,8 @@
     "dev": "medusa develop",
     "build": "medusa build",
     "start": "medusa start",
+    "start:server": "medusa start",
+    "start:worker": "medusa start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "node --test",

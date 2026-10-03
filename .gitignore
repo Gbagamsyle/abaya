@@ -3,6 +3,7 @@ node_modules/
 .next/
 .medusa/
 .sanity/
+apps/commerce/public/admin/
 apps/studio/schema.json
 .turbo/
 *.tsbuildinfo

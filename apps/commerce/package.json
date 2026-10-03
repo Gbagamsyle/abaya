@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "medusa develop",
-    "build": "medusa build",
+    "build": "medusa build && node scripts/copy-admin-build.mjs",
     "start": "medusa start",
-    "start:server": "medusa start",
-    "start:worker": "medusa start",
+    "start:server": "medusa start --port 9000",
+    "start:worker": "medusa start --port 9100",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "node --test",

@@ -7,6 +7,7 @@ export default tseslint.config(
     ignores: [
       "**/.next/**",
       "**/.medusa/**",
+      "**/public/admin/**",
       "**/dist/**",
       "**/node_modules/**",
       "**/.sanity/**",

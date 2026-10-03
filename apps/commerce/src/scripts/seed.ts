@@ -52,6 +52,15 @@ async function firstOrCreate<T>(
 }
 
 export default async function seed({ container }: SeedContext) {
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_DEVELOPMENT_SEED !== "true") {
+    throw new Error(
+      "The development catalogue seed is blocked in production unless ALLOW_DEVELOPMENT_SEED=true is explicitly set for an isolated QA environment.",
+    );
+  }
+  console.warn(
+    "Development-only catalogue and stock seed. Quantities and prices are fictional QA fixtures, not Fenomena business data.",
+  );
+
   const regionModule = container.resolve(Modules.REGION);
   const salesChannelModule = container.resolve(Modules.SALES_CHANNEL);
   const stockLocationModule = container.resolve(Modules.STOCK_LOCATION);

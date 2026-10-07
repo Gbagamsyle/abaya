@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "pnpm --filter @fenomena/ui build && pnpm --filter @fenomena/utils build && next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",

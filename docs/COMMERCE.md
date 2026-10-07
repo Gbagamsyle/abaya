@@ -4,7 +4,7 @@ Medusa is the source of truth for transactional commerce. Sanity must never be u
 
 ## Product and SKU relationship
 
-A Medusa product is the sellable merchandising entity; each Medusa variant corresponds to a purchasable SKU with option values, currency/price records, and inventory policy. Editorial copy and media can be joined through an explicit stable Medusa product/variant reference held in Sanity. Do not match by title or mutable slug.
+A Medusa product is the sellable merchandising entity; each Medusa variant corresponds to a purchasable SKU with option values, currency/price records, and inventory policy. Sanity stores the namespaced immutable `commerceIntegrationKey`; Medusa stores the same value in its first-class `Product.external_id` field. The Store API filters by this external ID, while the returned Medusa database ID remains the storefront's transactional identity. The seed adopts the existing Luna product once, then resolves it by this key on every run. Duplicate or conflicting identities fail closed. Never join by title or mutable handle, and never copy price, SKU, variants, or inventory into Sanity.
 
 ## Variants and inventory
 

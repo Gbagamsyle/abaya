@@ -355,7 +355,7 @@ export type Product = {
   _rev: string;
   title?: string;
   slug?: Slug;
-  commerceProductId?: string;
+  commerceIntegrationKey?: string;
   shortDescription?: string;
   description?: Array<{
     children?: Array<{
@@ -587,14 +587,112 @@ export type AllSanitySchemaTypes =
   | SanityAssetSourceData;
 export declare const internalGroqTypeReferenceTo: unique symbol;
 // Source: ../storefront/lib/sanity-adapter.ts
+// Variable: SITE_SETTINGS_QUERY
+// Query: *[_type == "siteSettings"][0]{  _id,  brandName,  logo,  contactEmail,  whatsappNumber,  instagramUrl,  tiktokUrl,  telegramUrl,  defaultCurrency,  announcementText,  announcementEnabled,  footerContent,  legalLinks}
+export type SITE_SETTINGS_QUERYResult = {
+  _id: string;
+  brandName: string | null;
+  logo: {
+    asset?: {
+      _ref: string;
+      _type: "reference";
+      _weak?: boolean;
+      [internalGroqTypeReferenceTo]?: "sanity.imageAsset";
+    };
+    media?: unknown;
+    hotspot?: SanityImageHotspot;
+    crop?: SanityImageCrop;
+    _type: "image";
+  } | null;
+  contactEmail: string | null;
+  whatsappNumber: string | null;
+  instagramUrl: string | null;
+  tiktokUrl: string | null;
+  telegramUrl: string | null;
+  defaultCurrency: "MYR" | "SGD" | "USD" | null;
+  announcementText: string | null;
+  announcementEnabled: boolean | null;
+  footerContent: Array<{
+    children?: Array<{
+      marks?: Array<string>;
+      text?: string;
+      _type: "span";
+      _key: string;
+    }>;
+    style?: "blockquote" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "normal";
+    listItem?: "bullet" | "number";
+    markDefs?: Array<{
+      href?: string;
+      _type: "link";
+      _key: string;
+    }>;
+    level?: number;
+    _type: "block";
+    _key: string;
+  }> | null;
+  legalLinks: Array<{
+    label?: string;
+    url?: string;
+    _key: string;
+  }> | null;
+} | null;
+// Variable: HOMEPAGE_QUERY
+// Query: *[_type == "homepage"][0]{  _id,  title,  slug,  seo,  sections[]{    _key,    sectionType,    title,    description,    ctaLabel,    ctaUrl,    collection->{_id, title, slug},    productReferences[]->{_id, title, slug, commerceIntegrationKey, shortDescription, newArrival,      "images": images[]{"url": image.asset->url, "alt": coalesce(alt, "")}    },    "image": {"url": image.asset->url, "alt": coalesce(image.alt, "")}  }}
+export type HOMEPAGE_QUERYResult = {
+  _id: string;
+  title: string | null;
+  slug: Slug | null;
+  seo: Seo | null;
+  sections: Array<{
+    _key: string;
+    sectionType:
+      | "collectionGrid"
+      | "editorialStory"
+      | "featuredCollection"
+      | "hero"
+      | "newArrivals"
+      | "newsletter"
+      | "personalShoppingCta"
+      | "socialContent"
+      | "socialTrending"
+      | "testimonials"
+      | "wholesaleCta"
+      | null;
+    title: string | null;
+    description: string | null;
+    ctaLabel: string | null;
+    ctaUrl: string | null;
+    collection: {
+      _id: string;
+      title: string | null;
+      slug: Slug | null;
+    } | null;
+    productReferences: Array<{
+      _id: string;
+      title: string | null;
+      slug: Slug | null;
+      commerceIntegrationKey: string | null;
+      shortDescription: string | null;
+      newArrival: boolean | null;
+      images: Array<{
+        url: string | null;
+        alt: string | "";
+      }> | null;
+    }> | null;
+    image: {
+      url: string | null;
+      alt: "";
+    };
+  }> | null;
+} | null;
 // Variable: PRODUCT_QUERY
-// Query: *[_type == "product" && defined(commerceProductId)]|order(title asc){  _id, _updatedAt, title, slug, commerceProductId, shortDescription, newArrival,  "description": pt::text(description),  "images": images[]{"url": image.asset->url, "alt": coalesce(alt, "")},  "collections": collections[]->{_id, title, slug}, material, careInformation, includedItems,  socialProof{platform, contentUrl, metricValue, metricLabel, verified},  "seo": {"title": seo.title, "description": seo.description, "canonicalUrl": seo.canonicalUrl}}
+// Query: *[_type == "product" && defined(commerceIntegrationKey)]|order(title asc){  _id, _updatedAt, title, slug, commerceIntegrationKey, shortDescription, newArrival,  "description": pt::text(description),  "images": images[]{"url": image.asset->url, "alt": coalesce(alt, "")},  "collections": collections[]->{_id, title, slug}, material, careInformation, includedItems,  socialProof{platform, contentUrl, metricValue, metricLabel, verified},  "seo": {"title": seo.title, "description": seo.description, "canonicalUrl": seo.canonicalUrl}}
 export type PRODUCT_QUERYResult = Array<{
   _id: string;
   _updatedAt: string;
   title: string | null;
   slug: Slug | null;
-  commerceProductId: string;
+  commerceIntegrationKey: string;
   shortDescription: string | null;
   newArrival: boolean | null;
   description: string;
@@ -642,13 +740,13 @@ export type COLLECTION_QUERYResult = Array<{
   };
 }>;
 // Variable: PRODUCT_BY_SLUG_QUERY
-// Query: *[_type == "product" && slug.current == $slug][0]{  _id, _updatedAt, title, slug, commerceProductId, shortDescription, newArrival,  "description": pt::text(description),  "images": images[]{"url": image.asset->url, "alt": coalesce(alt, "")},  "collections": collections[]->{_id, title, slug}, material, careInformation, includedItems,  socialProof{platform, contentUrl, metricValue, metricLabel, verified},  "seo": {"title": seo.title, "description": seo.description, "canonicalUrl": seo.canonicalUrl}}
+// Query: *[_type == "product" && slug.current == $slug][0]{  _id, _updatedAt, title, slug, commerceIntegrationKey, shortDescription, newArrival,  "description": pt::text(description),  "images": images[]{"url": image.asset->url, "alt": coalesce(alt, "")},  "collections": collections[]->{_id, title, slug}, material, careInformation, includedItems,  socialProof{platform, contentUrl, metricValue, metricLabel, verified},  "seo": {"title": seo.title, "description": seo.description, "canonicalUrl": seo.canonicalUrl}}
 export type PRODUCT_BY_SLUG_QUERYResult = {
   _id: string;
   _updatedAt: string;
   title: string | null;
   slug: Slug | null;
-  commerceProductId: string | null;
+  commerceIntegrationKey: string | null;
   shortDescription: string | null;
   newArrival: boolean | null;
   description: string;
@@ -682,8 +780,10 @@ export type PRODUCT_BY_SLUG_QUERYResult = {
 import "@sanity/client";
 declare module "@sanity/client" {
   interface SanityQueries {
-    '*[_type == "product" && defined(commerceProductId)]|order(title asc){\n  _id, _updatedAt, title, slug, commerceProductId, shortDescription, newArrival,\n  "description": pt::text(description),\n  "images": images[]{"url": image.asset->url, "alt": coalesce(alt, "")},\n  "collections": collections[]->{_id, title, slug}, material, careInformation, includedItems,\n  socialProof{platform, contentUrl, metricValue, metricLabel, verified},\n  "seo": {"title": seo.title, "description": seo.description, "canonicalUrl": seo.canonicalUrl}\n}': PRODUCT_QUERYResult;
+    '*[_type == "siteSettings"][0]{\n  _id,\n  brandName,\n  logo,\n  contactEmail,\n  whatsappNumber,\n  instagramUrl,\n  tiktokUrl,\n  telegramUrl,\n  defaultCurrency,\n  announcementText,\n  announcementEnabled,\n  footerContent,\n  legalLinks\n}': SITE_SETTINGS_QUERYResult;
+    '*[_type == "homepage"][0]{\n  _id,\n  title,\n  slug,\n  seo,\n  sections[]{\n    _key,\n    sectionType,\n    title,\n    description,\n    ctaLabel,\n    ctaUrl,\n    collection->{_id, title, slug},\n    productReferences[]->{_id, title, slug, commerceIntegrationKey, shortDescription, newArrival,\n      "images": images[]{"url": image.asset->url, "alt": coalesce(alt, "")}\n    },\n    "image": {"url": image.asset->url, "alt": coalesce(image.alt, "")}\n  }\n}': HOMEPAGE_QUERYResult;
+    '*[_type == "product" && defined(commerceIntegrationKey)]|order(title asc){\n  _id, _updatedAt, title, slug, commerceIntegrationKey, shortDescription, newArrival,\n  "description": pt::text(description),\n  "images": images[]{"url": image.asset->url, "alt": coalesce(alt, "")},\n  "collections": collections[]->{_id, title, slug}, material, careInformation, includedItems,\n  socialProof{platform, contentUrl, metricValue, metricLabel, verified},\n  "seo": {"title": seo.title, "description": seo.description, "canonicalUrl": seo.canonicalUrl}\n}': PRODUCT_QUERYResult;
     '*[_type == "collection"]|order(title asc){\n  _id, title, slug, description,\n  "heroMedia": {"url": heroMedia.asset->url, "alt": coalesce(heroMedia.alt, "")},\n  "productIds": productReferences[]._ref,\n  "seo": {"title": seo.title, "description": seo.description, "canonicalUrl": seo.canonicalUrl}\n}': COLLECTION_QUERYResult;
-    '*[_type == "product" && slug.current == $slug][0]{\n  _id, _updatedAt, title, slug, commerceProductId, shortDescription, newArrival,\n  "description": pt::text(description),\n  "images": images[]{"url": image.asset->url, "alt": coalesce(alt, "")},\n  "collections": collections[]->{_id, title, slug}, material, careInformation, includedItems,\n  socialProof{platform, contentUrl, metricValue, metricLabel, verified},\n  "seo": {"title": seo.title, "description": seo.description, "canonicalUrl": seo.canonicalUrl}\n}': PRODUCT_BY_SLUG_QUERYResult;
+    '*[_type == "product" && slug.current == $slug][0]{\n  _id, _updatedAt, title, slug, commerceIntegrationKey, shortDescription, newArrival,\n  "description": pt::text(description),\n  "images": images[]{"url": image.asset->url, "alt": coalesce(alt, "")},\n  "collections": collections[]->{_id, title, slug}, material, careInformation, includedItems,\n  socialProof{platform, contentUrl, metricValue, metricLabel, verified},\n  "seo": {"title": seo.title, "description": seo.description, "canonicalUrl": seo.canonicalUrl}\n}': PRODUCT_BY_SLUG_QUERYResult;
   }
 }

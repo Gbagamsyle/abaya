@@ -7,7 +7,7 @@ const editorial: SanityEditorialProduct[] = [
     _id: "demo-product-luna",
     title: "Demo Luna Abaya",
     slug: { current: "luna-abaya" },
-    commerceProductId: "demo-medusa-luna",
+    commerceIntegrationKey: "fenomena:demo-luna-abaya",
     shortDescription: "Fictional sample product for catalogue QA.",
     description:
       "A clearly fictional sample description used to validate the storefront experience.",
@@ -31,7 +31,7 @@ const editorial: SanityEditorialProduct[] = [
     _id: "demo-product-sora",
     title: "Demo Sora Set",
     slug: { current: "sora-set" },
-    commerceProductId: "demo-medusa-sora",
+    commerceIntegrationKey: "fenomena:demo-sora-set",
     shortDescription: "Fictional sample product for catalogue QA.",
     description:
       "A clearly fictional sample description used to validate search and collection screens.",
@@ -51,6 +51,7 @@ const editorial: SanityEditorialProduct[] = [
 const commerce: MedusaCommerceProduct[] = [
   {
     id: "demo-medusa-luna",
+    external_id: "fenomena:demo-luna-abaya",
     title: "Demo Luna Abaya",
     variants: [
       {
@@ -93,6 +94,7 @@ const commerce: MedusaCommerceProduct[] = [
   },
   {
     id: "demo-medusa-sora",
+    external_id: "fenomena:demo-sora-set",
     title: "Demo Sora Set",
     variants: [
       {
@@ -108,8 +110,8 @@ const commerce: MedusaCommerceProduct[] = [
 ];
 
 export const DEMO_PRODUCTS = editorial.map((item) => {
-  const source = commerce.find((product) => product.id === item.commerceProductId);
-  if (!source) throw new Error(`Missing demo commerce fixture for ${item.commerceProductId}`);
+  const source = commerce.find((product) => product.external_id === item.commerceIntegrationKey);
+  if (!source) throw new Error(`Missing demo commerce fixture for ${item.commerceIntegrationKey}`);
   return composeProduct(item, source, { isDemo: true });
 });
 

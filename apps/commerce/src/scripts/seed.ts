@@ -15,6 +15,10 @@ import {
 } from "@medusajs/core-flows";
 import type { MedusaContainer } from "@medusajs/framework/types";
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils";
+import {
+  LUNA_COMMERCE_INTEGRATION_KEY,
+  resolveProductIdByExternalId,
+} from "./product-identity";
 
 const REGION_NAME = "Malaysia";
 const SALES_CHANNEL_NAME = "Fenomena Storefront";
@@ -243,41 +247,54 @@ export default async function seed({ container }: SeedContext) {
     ]);
   }
 
-  let product = (
+  const productId = await resolveProductIdByExternalId({
+    findByExternalId: async () =>
+      (await productModule.listAndCountProducts(
+        { external_id: LUNA_COMMERCE_INTEGRATION_KEY },
+        { take: 2 },
+      ))[0],
+    findLegacyByHandle: async () =>
+      (await productModule.listAndCountProducts({ handle: PRODUCT_HANDLE }, { take: 2 }))[0],
+    adoptExternalId: async (id, externalId) => {
+      await productModule.updateProducts(id, { external_id: externalId });
+    },
+    create: async (externalId) =>
+      (
+        await createProductsWorkflow(container).run({
+          input: {
+            products: [
+              {
+                title: "Luna Abaya",
+                handle: PRODUCT_HANDLE,
+                external_id: externalId,
+                description: "Development catalogue product for storefront integration.",
+                status: "published",
+                options: [
+                  { title: "Colour", values: colours },
+                  { title: "Size", values: sizes },
+                ],
+                variants: variantStock.map((variant) => ({
+                  title: `Luna Abaya - ${variant.colour} / ${variant.size}`,
+                  sku: `LUNA-${variant.colour.replace(" ", "-").toUpperCase()}-${variant.size}`,
+                  options: { Colour: variant.colour, Size: variant.size },
+                  prices: [{ amount: 18500, currency_code: "myr" }],
+                  manage_inventory: true,
+                  allow_backorder: false,
+                })),
+                shipping_profile_id: shippingProfile.id,
+              },
+            ],
+          },
+        })
+      ).result[0],
+  });
+  const product = (
     await productModule.listProducts(
-      { handle: PRODUCT_HANDLE },
+      { id: productId },
       { relations: ["options", "options.values", "variants", "variants.inventory_items"] },
     )
   )[0];
-  if (!product) {
-    product = (
-      await createProductsWorkflow(container).run({
-        input: {
-          products: [
-            {
-              title: "Luna Abaya",
-              handle: PRODUCT_HANDLE,
-              description: "Development catalogue product for storefront integration.",
-              status: "published",
-              options: [
-                { title: "Colour", values: colours },
-                { title: "Size", values: sizes },
-              ],
-              variants: variantStock.map((variant) => ({
-                title: `Luna Abaya - ${variant.colour} / ${variant.size}`,
-                sku: `LUNA-${variant.colour.replace(" ", "-").toUpperCase()}-${variant.size}`,
-                options: { Colour: variant.colour, Size: variant.size },
-                prices: [{ amount: 18500, currency_code: "myr" }],
-                manage_inventory: true,
-                allow_backorder: false,
-              })),
-              shipping_profile_id: shippingProfile.id,
-            },
-          ],
-        },
-      })
-    ).result[0];
-  }
+  if (!product) throw new Error("Seeded Luna product could not be reloaded.");
 
   const currentVariants = product.variants ?? [];
   const colourOption = product.options?.find((option) => option.title === "Colour");
@@ -498,6 +515,7 @@ export default async function seed({ container }: SeedContext) {
           note: DEV_SHIPPING_NOTE,
         },
         productId: product.id,
+        commerceIntegrationKey: LUNA_COMMERCE_INTEGRATION_KEY,
         publishableKey: publishableKey.token,
         storefrontEnv: {
           MEDUSA_REGION_ID: region.id,

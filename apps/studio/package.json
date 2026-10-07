@@ -8,6 +8,7 @@
     "typegen:schema": "sanity schema extract --path ./schema.json",
     "typegen:generate": "sanity typegen generate",
     "typegen": "pnpm run typegen:schema && pnpm run typegen:generate",
+    "migrate:commerce-integration-key": "node scripts/migrate-commerce-integration-key.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "tsx --test"

@@ -1,7 +1,7 @@
-import { composeProduct } from "./composition";
+import { assertUniqueCommerceIntegrationKeys, composeProduct } from "./composition";
 import { DEMO_COLLECTIONS, DEMO_PRODUCTS } from "./demo-fixtures";
 import type { CatalogueResult, StorefrontCollectionEntry, StorefrontProduct } from "./domain";
-import { getMedusaProduct } from "./medusa-adapter";
+import { getMedusaProductByIntegrationKey, MedusaCatalogueLookupError } from "./medusa-adapter";
 import {
   getSanityCollections,
   getSanityProductBySlug,
@@ -16,7 +16,20 @@ function demoModeEnabled() {
 function failureFrom(error: unknown): CatalogueResult<never> {
   const detail = error instanceof Error ? error.message : "";
   const isConfigError = /not configured/i.test(detail);
-  const isCmsError = /sanity/i.test(detail);
+  const isCmsError = !(error instanceof MedusaCatalogueLookupError) && /sanity/i.test(detail);
+  const diagnosticCode =
+    error instanceof MedusaCatalogueLookupError
+      ? error.diagnosticCode
+      : isConfigError
+        ? "configuration-missing"
+        : isCmsError
+          ? "sanity-request-failed"
+          : detail.startsWith("Commerce integration key mismatch")
+            ? "integration-key-mismatch"
+            : detail.startsWith("Duplicate commerce integration key")
+              ? "duplicate-integration-key"
+              : "catalogue-request-failed";
+  console.error("[storefront.catalogue] load failed", { diagnosticCode });
   return {
     ok: false,
     reason: isConfigError
@@ -58,10 +71,11 @@ export async function loadCatalogue(): Promise<
 
   try {
     const editorialProducts = await getSanityProducts();
+    assertUniqueCommerceIntegrationKeys(editorialProducts);
     const collections = (await getSanityCollections()).map(mapSanityCollection);
     const products = await Promise.all(
       editorialProducts.map(async (editorial) => {
-        const commerce = await getMedusaProduct(editorial.commerceProductId);
+        const commerce = await getMedusaProductByIntegrationKey(editorial.commerceIntegrationKey);
         return composeProduct(editorial, commerce);
       }),
     );
@@ -79,7 +93,7 @@ export async function loadProduct(
   try {
     const editorial = await getSanityProductBySlug(slug);
     if (!editorial) return { ok: true, data: undefined, isDemo: false };
-    const commerce = await getMedusaProduct(editorial.commerceProductId);
+    const commerce = await getMedusaProductByIntegrationKey(editorial.commerceIntegrationKey);
     return { ok: true, data: composeProduct(editorial, commerce), isDemo: false };
   } catch (error) {
     return failureFrom(error);

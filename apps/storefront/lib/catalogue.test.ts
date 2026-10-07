@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { composeProduct } from "./composition";
+import { assertUniqueCommerceIntegrationKeys, composeProduct } from "./composition";
 import {
   filterAndSortProducts,
   getAvailableOptionValues,
@@ -17,7 +17,7 @@ const editorial: SanityEditorialProduct = {
   _id: "sanity-1",
   title: "Sample Luna",
   slug: { current: "sample-luna" },
-  commerceProductId: "medusa-1",
+  commerceIntegrationKey: "fenomena:sample-luna",
   shortDescription: "Lightweight blue abaya",
   description: "Editorial description",
   images: [{ url: "https://cdn.sanity.io/sample.jpg", alt: "Blue garment" }],
@@ -40,7 +40,8 @@ const editorial: SanityEditorialProduct = {
 };
 
 const commerce: MedusaCommerceProduct = {
-  id: "medusa-1",
+  id: "medusa-generated-local-id",
+  external_id: "fenomena:sample-luna",
   title: "Commerce identity",
   variants: [
     {
@@ -86,9 +87,9 @@ function makeProduct(overrides: Partial<StorefrontProduct> = {}): StorefrontProd
   return { ...product, ...overrides };
 }
 
-test("composeProduct joins editorial identity and commerce-authoritative variants", () => {
+test("composeProduct joins stable identity across Medusa IDs and keeps commerce-authoritative variants", () => {
   assert.equal(product.id, "sanity-1");
-  assert.equal(product.commerceProductId, "medusa-1");
+  assert.equal(product.commerceProductId, "medusa-generated-local-id");
   assert.equal(product.title, "Sample Luna");
   assert.equal(product.price?.amount, 259);
   assert.equal(product.price?.currency, "MYR");
@@ -96,7 +97,10 @@ test("composeProduct joins editorial identity and commerce-authoritative variant
   assert.equal(product.variants[1]?.availability, "unavailable");
   assert.equal(product.material, "Cotton blend");
   assert.equal(product.isDemo, false);
-  assert.throws(() => composeProduct(editorial, { ...commerce, id: "different-id" }), /mismatch/);
+  assert.throws(
+    () => composeProduct(editorial, { ...commerce, external_id: "fenomena:wrong-product" }),
+    /integration key mismatch/,
+  );
 });
 
 test("fictional demo records use the exact storefront composition contract", () => {
@@ -107,6 +111,13 @@ test("fictional demo records use the exact storefront composition contract", () 
   );
   assert.equal(typeof DEMO_PRODUCTS[0]?.commerceProductId, "string");
   assert.equal(DEMO_PRODUCTS[0]?.variants[0]?.options.Colour, "Baby Blue");
+});
+
+test("duplicate Sanity integration identities fail closed", () => {
+  assert.throws(
+    () => assertUniqueCommerceIntegrationKeys([editorial, { ...editorial, _id: "sanity-duplicate" }]),
+    /Duplicate commerce integration key/,
+  );
 });
 
 test("production catalogue mode never falls back to demo fixtures", async () => {

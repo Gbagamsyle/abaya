@@ -23,7 +23,7 @@ export const homepageQuery = `*[_type == "homepage"][0]{
     ctaLabel,
     ctaUrl,
     collection->{title, slug},
-    productReferences[]->{_id, title, slug, commerceProductId},
+    productReferences[]->{_id, title, slug, commerceIntegrationKey},
     image
   },
   seo
@@ -33,7 +33,7 @@ export const productsQuery = `*[_type == "product"]|order(title asc){
   _id,
   title,
   slug,
-  commerceProductId,
+  commerceIntegrationKey,
   shortDescription,
   featured,
   newArrival,
@@ -46,7 +46,7 @@ export const productBySlugQuery = `*[_type == "product" && slug.current == $slug
   _id,
   title,
   slug,
-  commerceProductId,
+  commerceIntegrationKey,
   shortDescription,
   description,
   images,
@@ -76,7 +76,7 @@ export const collectionBySlugQuery = `*[_type == "collection" && slug.current ==
   description,
   heroMedia,
   editorialContent,
-  productReferences[]->{_id, title, slug, commerceProductId},
+  productReferences[]->{_id, title, slug, commerceIntegrationKey},
   seo
 }`;
 

@@ -73,7 +73,7 @@ export type SanityEditorialProduct = {
   newArrival?: boolean;
   title: string;
   slug?: { current?: string } | string;
-  commerceProductId: string;
+  commerceIntegrationKey: string;
   shortDescription?: string;
   description?: string;
   images?: Array<{ url?: string; alt?: string }>;
@@ -93,6 +93,7 @@ export type SanityEditorialProduct = {
 
 export type MedusaCommerceProduct = {
   id: string;
+  external_id?: string | null;
   title: string;
   description?: string;
   status?: string;

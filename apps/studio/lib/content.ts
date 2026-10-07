@@ -9,8 +9,11 @@ export function isValidUrl(value: string | undefined): boolean {
   }
 }
 
-export function hasCommerceReference(value: string | undefined): boolean {
-  return typeof value === "string" && value.trim().length > 0;
+export function hasCommerceIntegrationKey(value: string | undefined): boolean {
+  return (
+    typeof value === "string" &&
+    /^[a-z0-9][a-z0-9-]*:[a-z0-9][a-z0-9-]*$/.test(value.trim())
+  );
 }
 
 export function getSectionSummary(value: string | undefined): string {

@@ -62,7 +62,7 @@ const HOMEPAGE_QUERY = defineQuery(`*[_type == "homepage"][0]{
     ctaLabel,
     ctaUrl,
     collection->{_id, title, slug},
-    productReferences[]->{_id, title, slug, commerceProductId, shortDescription, newArrival,
+    productReferences[]->{_id, title, slug, commerceIntegrationKey, shortDescription, newArrival,
       "images": images[]{"url": image.asset->url, "alt": coalesce(alt, "")}
     },
     "image": {"url": image.asset->url, "alt": coalesce(image.alt, "")}
@@ -70,8 +70,8 @@ const HOMEPAGE_QUERY = defineQuery(`*[_type == "homepage"][0]{
 }`);
 
 const PRODUCT_QUERY =
-  defineQuery(`*[_type == "product" && defined(commerceProductId)]|order(title asc){
-  _id, _updatedAt, title, slug, commerceProductId, shortDescription, newArrival,
+  defineQuery(`*[_type == "product" && defined(commerceIntegrationKey)]|order(title asc){
+  _id, _updatedAt, title, slug, commerceIntegrationKey, shortDescription, newArrival,
   "description": pt::text(description),
   "images": images[]{"url": image.asset->url, "alt": coalesce(alt, "")},
   "collections": collections[]->{_id, title, slug}, material, careInformation, includedItems,
@@ -87,7 +87,7 @@ const COLLECTION_QUERY = defineQuery(`*[_type == "collection"]|order(title asc){
 }`);
 
 const PRODUCT_BY_SLUG_QUERY = defineQuery(`*[_type == "product" && slug.current == $slug][0]{
-  _id, _updatedAt, title, slug, commerceProductId, shortDescription, newArrival,
+  _id, _updatedAt, title, slug, commerceIntegrationKey, shortDescription, newArrival,
   "description": pt::text(description),
   "images": images[]{"url": image.asset->url, "alt": coalesce(alt, "")},
   "collections": collections[]->{_id, title, slug}, material, careInformation, includedItems,
@@ -98,8 +98,8 @@ const PRODUCT_BY_SLUG_QUERY = defineQuery(`*[_type == "product" && slug.current 
 type ProductQueryRecord = PRODUCT_QUERYResult[number] | NonNullable<PRODUCT_BY_SLUG_QUERYResult>;
 
 function mapSanityProduct(input: ProductQueryRecord): SanityEditorialProduct {
-  if (!input.title || !input.commerceProductId) {
-    throw new Error("Sanity product is missing its title or Medusa product reference.");
+  if (!input.title || !input.commerceIntegrationKey) {
+    throw new Error("Sanity product is missing its title or commerce integration key.");
   }
 
   const socialProof = input.socialProof
@@ -119,7 +119,7 @@ function mapSanityProduct(input: ProductQueryRecord): SanityEditorialProduct {
     _updatedAt: input._updatedAt,
     title: input.title,
     slug: input.slug ?? undefined,
-    commerceProductId: input.commerceProductId,
+    commerceIntegrationKey: input.commerceIntegrationKey,
     shortDescription: input.shortDescription ?? undefined,
     description: input.description ?? undefined,
     images: input.images?.flatMap((image) =>

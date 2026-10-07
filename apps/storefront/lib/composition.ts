@@ -22,6 +22,16 @@ function variantAvailability(variant: NonNullable<MedusaCommerceProduct["variant
   return "unavailable" as const;
 }
 
+export function assertUniqueCommerceIntegrationKeys(products: readonly SanityEditorialProduct[]) {
+  const keys = new Set<string>();
+  for (const product of products) {
+    if (keys.has(product.commerceIntegrationKey)) {
+      throw new Error("Duplicate commerce integration key in Sanity editorial products.");
+    }
+    keys.add(product.commerceIntegrationKey);
+  }
+}
+
 function composeVariant(
   variant: NonNullable<MedusaCommerceProduct["variants"]>[number],
 ): StorefrontVariant {
@@ -57,10 +67,8 @@ export function composeProduct(
   commerce: MedusaCommerceProduct,
   options: { isDemo?: boolean } = {},
 ): StorefrontProduct {
-  if (editorial.commerceProductId !== commerce.id) {
-    throw new Error(
-      `Commerce product mismatch: expected ${editorial.commerceProductId}, received ${commerce.id}`,
-    );
+  if (editorial.commerceIntegrationKey !== commerce.external_id) {
+    throw new Error("Commerce integration key mismatch.");
   }
 
   const variants = (commerce.variants ?? []).map(composeVariant);
@@ -94,7 +102,7 @@ export function composeProduct(
 
   return {
     id: editorial._id,
-    commerceProductId: editorial.commerceProductId,
+    commerceProductId: commerce.id,
     title: editorial.title,
     slug: slugValue(editorial.slug),
     shortDescription: editorial.shortDescription ?? "",

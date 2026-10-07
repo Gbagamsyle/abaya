@@ -10,7 +10,7 @@
     "start:worker": "node scripts/start-medusa.mjs worker",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "node --test",
+    "test": "tsx --test",
     "seed:development": "medusa exec src/scripts/seed.ts"
   },
   "dependencies": {

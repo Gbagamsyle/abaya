@@ -27,13 +27,13 @@ export const product = defineType({
       validation: (rule) => rule.required(),
     }),
     defineField({
-      name: "commerceProductId",
-      title: "Commerce product ID",
+      name: "commerceIntegrationKey",
+      title: "Commerce integration key",
       type: "string",
       group: "commerce",
       description:
-        "Stable identifier from the Medusa product, used to link editorial content to the transactional catalog.",
-      validation: (rule) => rule.required().min(1),
+        "Immutable cross-environment identity matching the Medusa product external ID; never use a generated Medusa database ID.",
+      validation: (rule) => rule.required().regex(/^[a-z0-9][a-z0-9-]*:[a-z0-9][a-z0-9-]*$/),
     }),
     defineField({
       name: "shortDescription",
@@ -153,7 +153,7 @@ export const product = defineType({
   preview: {
     select: {
       title: "title",
-      subtitle: "commerceProductId",
+      subtitle: "commerceIntegrationKey",
       media: "images.0.image",
     },
   },

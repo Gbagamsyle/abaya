@@ -3,7 +3,7 @@ import test from "node:test";
 import {
   LUNA_COMMERCE_INTEGRATION_KEY,
   resolveProductIdByExternalId,
-} from "./product-identity";
+} from "./product-identity.ts";
 
 test("seed adopts a legacy Luna once and reuses the stable identity on reruns", async () => {
   const product = { id: "generated-product-id", external_id: null as string | null };

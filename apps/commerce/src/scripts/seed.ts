@@ -18,7 +18,7 @@ import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils";
 import {
   LUNA_COMMERCE_INTEGRATION_KEY,
   resolveProductIdByExternalId,
-} from "./product-identity";
+} from "./product-identity.ts";
 
 const REGION_NAME = "Malaysia";
 const SALES_CHANNEL_NAME = "Fenomena Storefront";

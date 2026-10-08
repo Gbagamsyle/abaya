@@ -1,15 +1,7 @@
-import { config as loadEnv } from "dotenv";
-import { resolve } from "node:path";
 import { defineConfig } from "@medusajs/framework/utils";
+import { loadCommerceEnvironment } from "./src/config/environment.ts";
 
-const workerModeFromEnvironment = process.env.MEDUSA_WORKER_MODE;
-loadEnv({
-  path: resolve(process.cwd(), "../../.env"),
-  override: process.env.NODE_ENV !== "production",
-});
-if (workerModeFromEnvironment) {
-  process.env.MEDUSA_WORKER_MODE = workerModeFromEnvironment;
-}
+loadCommerceEnvironment();
 
 const configured = (name: string, localFallback: string): string => {
   const value = process.env[name];

@@ -11,7 +11,10 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "tsx --test",
-    "seed:development": "medusa exec src/scripts/seed.ts"
+    "seed:development": "medusa exec src/scripts/seed.ts",
+    "diagnose:publishable-key": "tsx src/scripts/diagnose-publishable-key.ts",
+    "initialize:publishable-key": "medusa exec src/scripts/initialize-publishable-key.ts",
+    "direct:initialize:publishable-key": "tsx src/scripts/direct-publishable-key-initializer.ts"
   },
   "dependencies": {
     "@medusajs/admin-sdk": "^2.21.1",
@@ -21,12 +24,15 @@
     "@medusajs/framework": "^2.0.0",
     "@medusajs/medusa": "^2.0.0",
     "dotenv": "^18.0.5",
+    "pg": "^8.20.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "ulid": "^3.0.2"
   },
   "devDependencies": {
     "@medusajs/cli": "^2.0.0",
     "@types/node": "^22.13.0",
+    "@types/pg": "^8.15.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "ts-node": "^10.9.2",

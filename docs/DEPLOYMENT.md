@@ -40,11 +40,19 @@ Each Railway service uses the monorepo root as its source root (leave Railway's 
 
 ### Railway staging seed
 
-Only run on an isolated staging QA database before customer traffic, never against production data:
+The storefront sales channel and publishable key are initialized separately from catalogue/inventory data. Only run the initializer against the intended isolated QA database, and explicitly opt in for each invocation:
+
+`ALLOW_PUBLISHABLE_KEY_INITIALIZATION=true pnpm --filter @fenomena/commerce initialize:publishable-key`
+
+It creates the named channel/key only when missing, refuses ambiguous duplicates, and links the key only when not already linked. It does not print the key token. Do not run it through local `railway run` against a private Railway database hostname; `railway run` runs the command locally. Use a Railway service shell or an approved Railway database tunnel, and set `NODE_ENV=production` for any one-off command so local `.env` fallback behavior is not mistaken for a remote target.
+
+`pnpm --filter @fenomena/commerce diagnose:publishable-key` is a standalone `pg` client and does not load `medusa-config.ts`, Medusa modules/workflows, or Redis. For Railway's private PostgreSQL host from Windows, keep `railway connect Postgres --environment production --tunnel-only --port 55432` running in another terminal, inject Railway's `DATABASE_URL` with `railway run`, and set `PGHOST=127.0.0.1`, `PGPORT=55432`, and `DIAGNOSTIC_PUBLISHABLE_KEY` in the local process. It runs `BEGIN READ ONLY`, prints only key presence/status and channel IDs/existence, rolls back, and closes its pool.
+
+Only run the catalogue seed on an isolated staging QA database before customer traffic, never against production data:
 
 `pnpm --filter @fenomena/commerce seed:development`
 
-Set the Railway seed-job environment variable `ALLOW_DEVELOPMENT_SEED=true` for this invocation only. The command itself was run twice locally; the production guard was separately verified to reject execution without the opt-in. The seed explicitly warns that quantities/prices are fictional QA fixtures. Review its idempotency and the resulting baseline before exposing a QA storefront. It is not a product/inventory import for real Fenomena commerce.
+Initialize the storefront channel/key first using the explicit command above. Set the Railway seed-job environment variable `ALLOW_DEVELOPMENT_SEED=true` for the seed invocation only. The seed explicitly warns that quantities/prices are fictional QA fixtures. Although the seed reuses stable product identities and named resources, reruns reset fixture inventory/prices and can delete/recreate variants when the option matrix differs; treat it as a mutating QA seed, not a harmless key setup or a product/inventory import for real Fenomena commerce.
 
 ## Redis subsystem matrix (Medusa 2.21.1)
 
@@ -69,7 +77,7 @@ docker compose up -d postgres redis
 docker compose ps
 ```
 
-The accepted local run reported both services `healthy`. `pnpm db:up` starts the same pair. Copy the placeholder-only root `.env.example` to `.env` and set `POSTGRES_PASSWORD` and `DATABASE_URL` consistently. If an ignored `apps/commerce/.env` also exists, keep its `DATABASE_URL` aligned; local Medusa configuration now loads the root `.env` as the canonical development contract while preserving the launcher's worker mode. Never put secrets in versioned files.
+The accepted local run reported both services `healthy`. `pnpm db:up` starts the same pair. Copy the placeholder-only root `.env.example` to `.env` and set `POSTGRES_PASSWORD` and `DATABASE_URL` consistently. If an ignored `apps/commerce/.env` also exists, keep its `DATABASE_URL` aligned. Medusa configuration loads the root `.env` as local defaults only: variables already supplied by the process launcher always win, including when `NODE_ENV` is unset. Never put secrets in versioned files.
 
 Run migrations without resetting data:
 
@@ -83,7 +91,7 @@ The production commerce build runs `medusa build`, then copies the generated das
 
 ## Seed contract and baseline
 
-The seed creates/reuses one Malaysia region, one `Fenomena Storefront` sales channel, and one local development stock location (its address is marked `Development only`). It creates/reuses the `luna-abaya` QA product and the matrix:
+The separate storefront initializer creates/reuses one `Fenomena Storefront` sales channel and publishable key and links them. The catalogue seed requires that channel to exist; it creates/reuses one Malaysia region and one local development stock location (its address is marked `Development only`). It creates/reuses the `luna-abaya` QA product and the matrix:
 
 - Colours: Baby Blue, Rich Brown, Silver Grey
 - Sizes: 52, 54, 56, 58, 60
@@ -135,7 +143,7 @@ Local host defaults in examples (for example `localhost:3000` and `localhost:900
 
 - Medusa `GET /health` returns `200 OK` after startup. It is a liveness check, not a deep dependency readiness probe. Startup must also complete PostgreSQL initialization and the explicit Redis provider connections; monitor logs and add provider-level monitoring/alerts for staging.
 - The server mode exposes the Medusa API; the worker mode does not register those API/admin entrypoints. Keep the worker private even though its CLI process has a health listener.
-- Recommended order: approve accounts/region/billing; create isolated PostgreSQL and Redis; provision secrets; build services; run the migration once; start server and worker; verify server and worker health/logs; run `pnpm --filter @fenomena/commerce seed:development` on the target Railway Medusa service to assign/verify the stable Luna `external_id`; run the documented Sanity integration-key migration against the matching dataset; configure Stripe test settings; deploy Vercel with the real Medusa/Sanity origins; test storefront, checkout preparation, and Stripe test events.
+- Recommended order: approve accounts/region/billing; create isolated PostgreSQL and Redis; provision secrets; build services; run the migration once; start server and worker; verify server and worker health/logs; explicitly initialize the storefront key/channel in the target Railway database; run the development seed only for isolated QA catalogue data; run the documented Sanity integration-key migration against the matching dataset; configure Stripe test settings; deploy Vercel with the real Medusa/Sanity origins; test storefront, checkout preparation, and Stripe test events.
 - Before migrations, take a database backup and verify restoration instructions. Application rollback does not reverse schema changes. Prefer a forward migration fix; restore a pre-migration snapshot only under the recovery runbook after assessing writes and data loss.
 - Keep deployment images and database backups according to an approved retention policy. Define monitoring, access control, incident response, RPO/RTO, and recovery owners before production use.
 

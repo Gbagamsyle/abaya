@@ -1,14 +1,11 @@
 import {
-  createApiKeysWorkflow,
   createInventoryItemsWorkflow,
   createInventoryLevelsWorkflow,
   createProductVariantsWorkflow,
   createProductsWorkflow,
   createRegionsWorkflow,
-  createSalesChannelsWorkflow,
   createStockLocationsWorkflow,
   linkProductsToSalesChannelWorkflow,
-  linkSalesChannelsToApiKeyWorkflow,
   linkSalesChannelsToStockLocationWorkflow,
   updateProductOptionValuesWorkflow,
   updateRegionsWorkflow,
@@ -24,7 +21,6 @@ const REGION_NAME = "Malaysia";
 const SALES_CHANNEL_NAME = "Fenomena Storefront";
 const STOCK_LOCATION_NAME = "Fenomena Main Stock";
 const PRODUCT_HANDLE = "luna-abaya";
-const PUBLISHABLE_KEY_TITLE = "Fenomena Storefront";
 const DEV_DELIVERY_SET_NAME = "Malaysia Delivery";
 const DEV_SERVICE_ZONE_NAME = "Malaysia";
 const DEV_SHIPPING_OPTION_NAME = "Standard Delivery";
@@ -72,7 +68,6 @@ export default async function seed({ container }: SeedContext) {
   const fulfillmentModule = container.resolve(Modules.FULFILLMENT);
   const pricingModule = container.resolve(Modules.PRICING);
   const inventoryModule = container.resolve(Modules.INVENTORY);
-  const apiKeyModule = container.resolve(Modules.API_KEY);
   const remoteLink = container.resolve(ContainerRegistrationKeys.REMOTE_LINK);
   const query = container.resolve(ContainerRegistrationKeys.QUERY);
 
@@ -102,19 +97,12 @@ export default async function seed({ container }: SeedContext) {
       },
     });
   }
-  const salesChannel = await firstOrCreate(
-    async () => (await salesChannelModule.listSalesChannels({ name: SALES_CHANNEL_NAME }))[0],
-    async () =>
-      (
-        await createSalesChannelsWorkflow(container).run({
-          input: {
-            salesChannelsData: [
-              { name: SALES_CHANNEL_NAME, description: "Development storefront" },
-            ],
-          },
-        })
-      ).result[0],
-  );
+  const salesChannel = (await salesChannelModule.listSalesChannels({ name: SALES_CHANNEL_NAME }))[0];
+  if (!salesChannel) {
+    throw new Error(
+      "Fenomena Storefront sales channel is missing. Run initialize:publishable-key explicitly before the catalogue seed.",
+    );
+  }
   const stockLocation = await firstOrCreate(
     async () => (await stockLocationModule.listStockLocations({ name: STOCK_LOCATION_NAME }))[0],
     async () =>
@@ -485,22 +473,6 @@ export default async function seed({ container }: SeedContext) {
     });
   }
 
-  let publishableKey = (
-    await apiKeyModule.listApiKeys({ title: PUBLISHABLE_KEY_TITLE, type: "publishable" })
-  )[0];
-  if (!publishableKey) {
-    publishableKey = (
-      await createApiKeysWorkflow(container).run({
-        input: {
-          api_keys: [{ type: "publishable", title: PUBLISHABLE_KEY_TITLE, created_by: "seed" }],
-        },
-      })
-    ).result[0];
-  }
-  await linkSalesChannelsToApiKeyWorkflow(container).run({
-    input: { id: publishableKey.id, add: [salesChannel.id], remove: [] },
-  });
-
   console.log(
     JSON.stringify(
       {
@@ -516,11 +488,6 @@ export default async function seed({ container }: SeedContext) {
         },
         productId: product.id,
         commerceIntegrationKey: LUNA_COMMERCE_INTEGRATION_KEY,
-        publishableKey: publishableKey.token,
-        storefrontEnv: {
-          MEDUSA_REGION_ID: region.id,
-          MEDUSA_PUBLISHABLE_KEY: publishableKey.token,
-        },
       },
       null,
       2,

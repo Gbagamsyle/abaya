@@ -41,6 +41,38 @@ variantStock[1].stock = 0;
 
 type SeedContext = { container: MedusaContainer };
 
+type SeedVariant = { id?: string; sku?: string | null; title?: string | null };
+
+type SeedVariantPlan = {
+  deleteExistingVariants: boolean;
+  existingVariantSkus: string[];
+  missingVariantSkus: string[];
+  inventoryOnlyForNewVariants: boolean;
+};
+
+export function buildSeedVariantPlan(
+  currentVariants: SeedVariant[],
+  desiredStock: Array<{ colour: string; size: string; stock: number }>,
+): SeedVariantPlan {
+  const existingVariantSkus = currentVariants
+    .map((variant) => variant.sku)
+    .filter((sku): sku is string => Boolean(sku));
+
+  const missingVariantSkus = desiredStock
+    .map(
+      (variant) =>
+        `LUNA-${variant.colour.replaceAll(" ", "-").toUpperCase()}-${variant.size}`,
+    )
+    .filter((sku) => !existingVariantSkus.includes(sku));
+
+  return {
+    deleteExistingVariants: false,
+    existingVariantSkus,
+    missingVariantSkus,
+    inventoryOnlyForNewVariants: false,
+  };
+}
+
 async function firstOrCreate<T>(
   existing: () => Promise<T | undefined>,
   create: () => Promise<T | T[]>,
@@ -289,17 +321,15 @@ export default async function seed({ container }: SeedContext) {
   const sizeOption = product.options?.find((option) => option.title === "Size");
   if (!colourOption || !sizeOption) throw new Error("Luna product options are incomplete.");
 
-  const expectedSkus = new Set(
-    variantStock.map(
-      (item) => `LUNA-${item.colour.replaceAll(" ", "-").toUpperCase()}-${item.size}`,
-    ),
-  );
-  const currentSkus = currentVariants.map((variant) => variant.sku);
+  const plan = buildSeedVariantPlan(currentVariants, variantStock);
+  const currentSkus = new Set(plan.existingVariantSkus);
   const hasRequestedMatrix =
-    currentVariants.length === expectedSkus.size &&
-    currentSkus.every((sku): sku is string => Boolean(sku)) &&
-    new Set(currentSkus).size === expectedSkus.size &&
-    currentSkus.every((sku) => expectedSkus.has(sku));
+    currentVariants.length === variantStock.length &&
+    currentSkus.size === variantStock.length &&
+    variantStock.every((variant) => {
+      const sku = `LUNA-${variant.colour.replaceAll(" ", "-").toUpperCase()}-${variant.size}`;
+      return currentSkus.has(sku);
+    });
 
   const legacyOat = colourOption.values?.find((value) => value.value === "Oat");
   if (legacyOat) {
@@ -330,31 +360,27 @@ export default async function seed({ container }: SeedContext) {
     throw new Error("Luna has an unsupported option value; refusing to delete associated values.");
   }
 
-  if (hasRequestedMatrix && !hasExactOptionValues) {
-    throw new Error("Luna has the expected SKUs but its product option values do not match.");
+  if (!hasExactOptionValues) {
+    await productModule.updateProductOptionValuesOnProduct([
+      {
+        product_id: product.id,
+        product_option_id: colourOption.id,
+        add: colours.filter((colour) => !currentColours.has(colour)).map((value) => ({ value })),
+      },
+      {
+        product_id: product.id,
+        product_option_id: sizeOption.id,
+        add: sizes.filter((size) => !currentSizes.has(size)).map((value) => ({ value })),
+      },
+    ]);
+    console.info("Added any missing Luna option values while preserving the existing product matrix.");
   }
 
   if (!hasRequestedMatrix) {
-    await productModule.deleteProductVariants(currentVariants.map((variant) => variant.id));
-    if (!hasExactOptionValues) {
-      await productModule.updateProductOptionValuesOnProduct([
-        {
-          product_id: product.id,
-          product_option_id: colourOption.id,
-          add: colours.filter((colour) => !currentColours.has(colour)).map((value) => ({ value })),
-        },
-        {
-          product_id: product.id,
-          product_option_id: sizeOption.id,
-          add: sizes.filter((size) => !currentSizes.has(size)).map((value) => ({ value })),
-        },
-      ]);
-      console.info("Added Luna option values. Re-run the development seed to create variants.");
-      return;
-    }
     const variantsToCreate = await Promise.all(
       variantStock.map(async (variant) => {
         const sku = `LUNA-${variant.colour.replaceAll(" ", "-").toUpperCase()}-${variant.size}`;
+        if (currentSkus.has(sku)) return null;
         const existingInventoryItem = (await inventoryModule.listInventoryItems({ sku }))[0];
         return {
           title: `Luna Abaya - ${variant.colour} / ${variant.size}`,
@@ -369,14 +395,19 @@ export default async function seed({ container }: SeedContext) {
         };
       }),
     );
-    await createProductVariantsWorkflow(container).run({
-      input: {
-        product_variants: variantsToCreate.map((variant) => ({
-          product_id: product.id,
-          ...variant,
-        })),
-      },
-    });
+    const pendingVariants = variantsToCreate.filter(
+      (item): item is Exclude<typeof item, null> => item !== null,
+    );
+    if (pendingVariants.length) {
+      await createProductVariantsWorkflow(container).run({
+        input: {
+          product_variants: pendingVariants.map((variant) => ({
+            product_id: product.id,
+            ...variant,
+          })),
+        },
+      });
+    }
   }
 
   await linkProductsToSalesChannelWorkflow(container).run({
@@ -452,14 +483,7 @@ export default async function seed({ container }: SeedContext) {
         location_id: stockLocation.id,
       })
     )[0];
-    if (current) {
-      await inventoryModule.updateInventoryLevels({
-        id: current.id,
-        inventory_item_id: inventoryItem.inventory_item_id,
-        location_id: stockLocation.id,
-        stocked_quantity: stock,
-      });
-    } else {
+    if (!current) {
       inventoryLevels.push({
         inventory_item_id: inventoryItem.inventory_item_id,
         location_id: stockLocation.id,

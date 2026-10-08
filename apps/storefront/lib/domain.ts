@@ -62,7 +62,11 @@ export type StorefrontCollectionEntry = StorefrontCollection & {
   productIds: string[];
 };
 
-export type CatalogueFailure = "not-configured" | "cms-unavailable" | "commerce-unavailable";
+export type CatalogueFailure =
+  | "not-configured"
+  | "cms-unavailable"
+  | "commerce-unavailable"
+  | "cms-empty";
 
 export type CatalogueResult<T> =
   { ok: true; data: T; isDemo: boolean } | { ok: false; reason: CatalogueFailure; message: string };

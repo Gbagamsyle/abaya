@@ -3,6 +3,7 @@ import type { CatalogueFailure } from "../lib/domain";
 
 const failureTitles: Record<CatalogueFailure, string> = {
   "not-configured": "Catalogue data is not configured",
+  "cms-empty": "No published products are available",
   "cms-unavailable": "Editorial catalogue is temporarily unavailable",
   "commerce-unavailable": "Product availability is temporarily unavailable",
 };

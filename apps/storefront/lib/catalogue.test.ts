@@ -120,6 +120,48 @@ test("duplicate Sanity integration identities fail closed", () => {
   );
 });
 
+test("published catalogue queries exclude drafts and fail closed on empty Sanity results", async () => {
+  const env = process.env as Record<string, string | undefined>;
+  const previous = {
+    sanityProjectId: env.SANITY_PROJECT_ID,
+    sanityDataset: env.SANITY_DATASET,
+  };
+  env.SANITY_PROJECT_ID = "ngsx4qyk";
+  env.SANITY_DATASET = "production";
+
+  const originalFetch = global.fetch;
+  const observed: string[] = [];
+  global.fetch = async (input) => {
+    const value = input instanceof Request ? input.url : String(input);
+    observed.push(value);
+    const url = new URL(value);
+    const query = url.searchParams.get("query") ?? "";
+    assert.match(query, /drafts\.\*\*/);
+    return {
+      ok: true,
+      async json() {
+        return { result: [] };
+      },
+    } as Response;
+  };
+
+  try {
+    const result = await loadCatalogue();
+    assert.equal(result.ok, false);
+    if (!result.ok) {
+      assert.equal(result.reason, "cms-empty");
+      assert.match(result.message, /No published product documents/i);
+    }
+    assert.ok(observed.length > 0);
+  } finally {
+    global.fetch = originalFetch;
+    if (previous.sanityProjectId === undefined) delete env.SANITY_PROJECT_ID;
+    else env.SANITY_PROJECT_ID = previous.sanityProjectId;
+    if (previous.sanityDataset === undefined) delete env.SANITY_DATASET;
+    else env.SANITY_DATASET = previous.sanityDataset;
+  }
+});
+
 test("production catalogue mode never falls back to demo fixtures", async () => {
   const env = process.env as Record<string, string | undefined>;
   const previous = {

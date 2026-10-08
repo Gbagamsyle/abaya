@@ -70,7 +70,7 @@ const HOMEPAGE_QUERY = defineQuery(`*[_type == "homepage"][0]{
 }`);
 
 const PRODUCT_QUERY =
-  defineQuery(`*[_type == "product" && defined(commerceIntegrationKey)]|order(title asc){
+  defineQuery(`*[_type == "product" && defined(commerceIntegrationKey) && !(_id in path("drafts.**"))]|order(title asc){
   _id, _updatedAt, title, slug, commerceIntegrationKey, shortDescription, newArrival,
   "description": pt::text(description),
   "images": images[]{"url": image.asset->url, "alt": coalesce(alt, "")},
@@ -79,14 +79,14 @@ const PRODUCT_QUERY =
   "seo": {"title": seo.title, "description": seo.description, "canonicalUrl": seo.canonicalUrl}
 }`);
 
-const COLLECTION_QUERY = defineQuery(`*[_type == "collection"]|order(title asc){
+const COLLECTION_QUERY = defineQuery(`*[_type == "collection" && !(_id in path("drafts.**"))]|order(title asc){
   _id, title, slug, description,
   "heroMedia": {"url": heroMedia.asset->url, "alt": coalesce(heroMedia.alt, "")},
   "productIds": productReferences[]._ref,
   "seo": {"title": seo.title, "description": seo.description, "canonicalUrl": seo.canonicalUrl}
 }`);
 
-const PRODUCT_BY_SLUG_QUERY = defineQuery(`*[_type == "product" && slug.current == $slug][0]{
+const PRODUCT_BY_SLUG_QUERY = defineQuery(`*[_type == "product" && slug.current == $slug && !(_id in path("drafts.**"))][0]{
   _id, _updatedAt, title, slug, commerceIntegrationKey, shortDescription, newArrival,
   "description": pt::text(description),
   "images": images[]{"url": image.asset->url, "alt": coalesce(alt, "")},

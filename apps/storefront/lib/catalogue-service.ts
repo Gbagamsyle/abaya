@@ -71,6 +71,17 @@ export async function loadCatalogue(): Promise<
 
   try {
     const editorialProducts = await getSanityProducts();
+    if (editorialProducts.length === 0) {
+      console.error("[storefront.catalogue] empty published Sanity product set", {
+        reason: "cms-empty",
+        count: 0,
+      });
+      return {
+        ok: false,
+        reason: "cms-empty",
+        message: "No published product documents are available in Sanity for the storefront catalogue.",
+      };
+    }
     assertUniqueCommerceIntegrationKeys(editorialProducts);
     const collections = (await getSanityCollections()).map(mapSanityCollection);
     const products = await Promise.all(

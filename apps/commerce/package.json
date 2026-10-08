@@ -14,7 +14,8 @@
     "seed:development": "medusa exec src/scripts/seed.ts",
     "diagnose:publishable-key": "tsx src/scripts/diagnose-publishable-key.ts",
     "initialize:publishable-key": "medusa exec src/scripts/initialize-publishable-key.ts",
-    "direct:initialize:publishable-key": "tsx src/scripts/direct-publishable-key-initializer.ts"
+    "direct:initialize:publishable-key": "tsx src/scripts/direct-publishable-key-initializer.ts",
+    "copy:storefront-publishable-key": "tsx src/scripts/copy-storefront-publishable-key.ts"
   },
   "dependencies": {
     "@medusajs/admin-sdk": "^2.21.1",

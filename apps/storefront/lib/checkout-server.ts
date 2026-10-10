@@ -35,7 +35,16 @@ export type CheckoutValidationResult = {
   errors: string[];
 };
 
+export const STRIPE_PROVIDER_PREFIX = "pp_stripe_";
+export const SYSTEM_PROVIDER_PREFIX = "pp_system_";
 export const STRIPE_PROVIDER_ID = "pp_stripe_stripe";
+export const SYSTEM_PROVIDER_ID = "pp_system_default";
+
+export type PaymentProviderCandidate = {
+  id?: string;
+  is_installed?: boolean;
+  provider?: string;
+};
 
 export type PaymentReadyCart = {
   id: string;
@@ -44,6 +53,7 @@ export type PaymentReadyCart = {
   shipping_methods?: unknown[];
   total?: number;
   currency_code?: string;
+  region_id?: string;
   payment_collection?: {
     payment_sessions?: Array<{
       provider_id?: string;
@@ -67,6 +77,27 @@ export function validatePaymentReadyCart(cart: PaymentReadyCart) {
   if (!Number.isFinite(cart.total) || (cart.total ?? 0) <= 0) {
     throw new Error("This order total cannot be paid by card.");
   }
+}
+
+export function resolveCheckoutProvider(
+  providers: Array<PaymentProviderCandidate | undefined>,
+): PaymentProviderCandidate | undefined {
+  const available = providers.filter(
+    (provider): provider is PaymentProviderCandidate => Boolean(provider?.id),
+  );
+  if (!available.length) return undefined;
+
+  const stripe = available.find((provider) =>
+    typeof provider.id === "string" && provider.id.startsWith(STRIPE_PROVIDER_PREFIX),
+  );
+  if (stripe) return stripe;
+
+  const system = available.find((provider) =>
+    typeof provider.id === "string" && provider.id.startsWith(SYSTEM_PROVIDER_PREFIX),
+  );
+  if (system) return system;
+
+  return available[0];
 }
 
 function configured() {
@@ -233,32 +264,50 @@ export function formatCheckoutMoney(amount: number, currency: string) {
 }
 
 export async function createStripePaymentSession(cartId: string): Promise<{
-  clientSecret: string;
+  clientSecret?: string;
+  providerId: string;
   total: CartMoney;
+  requiresAction: boolean;
 }> {
   const { cart: source } = await sdk().store.cart.retrieve(cartId, {
     fields:
-      "id,email,total,items.id,shipping_methods.id,*payment_collection,*payment_collection.payment_sessions",
+      "id,email,total,items.id,shipping_methods.id,region_id,*payment_collection,*payment_collection.payment_sessions",
   } as never);
   const cart = source as unknown as PaymentReadyCart;
   validatePaymentReadyCart(cart);
 
+  const providerList = await sdk().store.payment.listPaymentProviders({
+    region_id: cart.region_id ?? "",
+    fields: "id,is_installed,provider",
+  } as never);
+  const providers = (providerList as unknown as { payment_providers?: PaymentProviderCandidate[] })
+    .payment_providers ?? [];
+  const provider = resolveCheckoutProvider(providers);
+  if (!provider?.id) {
+    throw new Error("No payment provider is configured for this checkout.");
+  }
+
   const { payment_collection: collection } = await sdk().store.payment.initiatePaymentSession(
     cart as never,
-    { provider_id: STRIPE_PROVIDER_ID },
+    { provider_id: provider.id },
     { fields: "id,*payment_sessions" } as never,
   );
   const session = (collection.payment_sessions ?? []).find(
-    (candidate) => candidate.provider_id === STRIPE_PROVIDER_ID,
+    (candidate) => candidate.provider_id === provider.id,
   );
   const clientSecret = session?.data?.client_secret;
-  if (typeof clientSecret !== "string" || !clientSecret) {
-    throw new Error("Medusa did not return a Stripe payment session.");
+  const isSystemProvider = provider.id.startsWith(SYSTEM_PROVIDER_PREFIX);
+  const needsAction = !isSystemProvider && typeof clientSecret === "string" && clientSecret.length > 0;
+
+  if (!isSystemProvider && !needsAction) {
+    throw new Error(`Medusa did not return a payment session for ${provider.id}.`);
   }
 
   return {
-    clientSecret,
+    clientSecret: typeof clientSecret === "string" && clientSecret.length > 0 ? clientSecret : undefined,
+    providerId: provider.id,
     total: moneyFromCents(cart.total, cart.currency_code),
+    requiresAction: needsAction,
   };
 }
 

@@ -8,13 +8,16 @@ import { stripePromise } from "../lib/stripe-client";
 
 type ApiResponse = {
   clientSecret?: string;
+  providerId?: string;
   total?: CartMoney;
+  requiresAction?: boolean;
   orderReference?: string;
   error?: string;
 };
 
 export default function StripePaymentForm({ total }: { total: CartMoney }) {
   const [clientSecret, setClientSecret] = useState<string>();
+  const [providerId, setProviderId] = useState<string>();
   const [sessionTotal, setSessionTotal] = useState(total);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
@@ -25,16 +28,24 @@ export default function StripePaymentForm({ total }: { total: CartMoney }) {
     try {
       const response = await fetch("/api/checkout/payment-session", { method: "POST" });
       const payload = (await response.json()) as ApiResponse;
-      if (!response.ok || !payload.clientSecret) {
+      const isSystemProvider = payload.providerId?.startsWith("pp_system_");
+      if (!response.ok || (!payload.clientSecret && !isSystemProvider)) {
         throw new Error(payload.error ?? "Secure payment could not be prepared.");
       }
       setClientSecret(payload.clientSecret);
+      setProviderId(payload.providerId);
       if (payload.total) setSessionTotal(payload.total);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Secure payment could not be prepared.");
     } finally {
       setLoading(false);
     }
+  }
+
+  if (providerId?.startsWith("pp_system_")) {
+    return (
+      <ManualPaymentForm total={sessionTotal} providerId={providerId} onRetry={initializePayment} />
+    );
   }
 
   if (!stripePromise) {
@@ -68,6 +79,74 @@ export default function StripePaymentForm({ total }: { total: CartMoney }) {
           {loading ? "Preparing secure payment…" : `Continue to pay ${formatMoney(total)}`}
         </button>
       )}
+      {error ? (
+        <p role="alert" style={{ color: "#b91c1c", margin: 0 }}>
+          {error}
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
+function ManualPaymentForm({
+  total,
+  providerId,
+  onRetry,
+}: {
+  total: CartMoney;
+  providerId: string;
+  onRetry: () => Promise<void>;
+}) {
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string>();
+
+  async function completeOrder() {
+    setSubmitting(true);
+    setError(undefined);
+    try {
+      const response = await fetch("/api/checkout/complete", { method: "POST" });
+      const payload = (await response.json()) as ApiResponse;
+      if (!response.ok) throw new Error(payload.error ?? "Order completion is pending.");
+      const target = payload.orderReference
+        ? `/checkout/confirmation?reference=${encodeURIComponent(payload.orderReference)}`
+        : "/checkout/confirmation";
+      window.location.assign(target);
+    } catch (reason) {
+      setError(
+        reason instanceof Error ? reason.message : "Order completion is pending. Retry shortly.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <section
+      aria-labelledby="manual-payment-heading"
+      style={{
+        border: "1px solid #e5e7eb",
+        borderRadius: 12,
+        padding: 20,
+        display: "grid",
+        gap: 16,
+      }}
+    >
+      <div>
+        <h2 id="manual-payment-heading">Demo checkout</h2>
+        <p>
+          Medusa is using the built-in {providerId} payment provider. This order is marked as paid
+          without a real external payment provider.
+        </p>
+      </div>
+      <p>
+        Total due: <strong>{formatMoney(total)}</strong>
+      </p>
+      <button type="button" onClick={completeOrder} disabled={submitting}>
+        {submitting ? "Completing demo order…" : `Complete order · ${formatMoney(total)}`}
+      </button>
+      <button type="button" onClick={() => void onRetry()} disabled={submitting}>
+        Refresh payment status
+      </button>
       {error ? (
         <p role="alert" style={{ color: "#b91c1c", margin: 0 }}>
           {error}

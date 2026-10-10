@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { validatePaymentReadyCart } from "./checkout-server";
+import { resolveCheckoutProvider, validatePaymentReadyCart } from "./checkout-server";
 import { createIdempotencyGate } from "./idempotency";
 
 test("payment session rejects an empty or stale cart", () => {
@@ -26,6 +26,21 @@ test("payment session rejects zero or invalid Medusa totals", () => {
     () => validatePaymentReadyCart({ ...base, total: Number.NaN }),
     /total cannot be paid/,
   );
+});
+
+test("payment provider selection prefers Stripe when available and falls back to the Medusa system provider", () => {
+  assert.equal(
+    resolveCheckoutProvider([
+      { id: "pp_system_default" },
+      { id: "pp_stripe_stripe" },
+    ])?.id,
+    "pp_stripe_stripe",
+  );
+  assert.equal(
+    resolveCheckoutProvider([{ id: "pp_system_default" }])?.id,
+    "pp_system_default",
+  );
+  assert.equal(resolveCheckoutProvider([]), undefined);
 });
 
 test("duplicate order completion shares an in-flight call and caches success", async () => {

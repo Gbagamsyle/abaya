@@ -13,6 +13,8 @@
     "test": "tsx --test",
     "seed:development": "medusa exec src/scripts/seed.ts",
     "diagnose:publishable-key": "tsx src/scripts/diagnose-publishable-key.ts",
+    "verify:region-payment-providers": "medusa exec src/scripts/verify-region-payment-providers.ts",
+    "update:region-payment-providers": "medusa exec src/scripts/update-region-payment-providers.ts -- --dry-run",
     "initialize:publishable-key": "medusa exec src/scripts/initialize-publishable-key.ts",
     "direct:initialize:publishable-key": "tsx src/scripts/direct-publishable-key-initializer.ts",
     "copy:storefront-publishable-key": "tsx src/scripts/copy-storefront-publishable-key.ts"

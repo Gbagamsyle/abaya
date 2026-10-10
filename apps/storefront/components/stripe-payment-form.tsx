@@ -42,15 +42,18 @@ export default function StripePaymentForm({ total }: { total: CartMoney }) {
     }
   }
 
-  if (providerId?.startsWith("pp_system_")) {
+  const isManualProvider =
+    providerId === "pp_system" ||
+    providerId === "pp_system_default" ||
+    providerId?.startsWith("pp_system_");
+
+  if (isManualProvider && providerId) {
     return (
       <ManualPaymentForm total={sessionTotal} providerId={providerId} onRetry={initializePayment} />
     );
   }
 
-  if (!stripePromise) {
-    return <p role="alert">Stripe test payments are not configured in this storefront.</p>;
-  }
+  const stripeConfigured = Boolean(stripePromise);
 
   return (
     <section
@@ -64,10 +67,14 @@ export default function StripePaymentForm({ total }: { total: CartMoney }) {
       }}
     >
       <div>
-        <h2 id="payment-heading">Secure card payment</h2>
-        <p>Payment is processed by Stripe. Your card details are never sent to this storefront.</p>
+        <h2 id="payment-heading">{stripeConfigured ? "Secure card payment" : "Payment method"}</h2>
+        <p>
+          {stripeConfigured
+            ? "Payment is processed by Stripe. Your card details are never sent to this storefront."
+            : "Checking which Medusa payment provider is available for this order."}
+        </p>
       </div>
-      {clientSecret ? (
+      {stripeConfigured && clientSecret ? (
         <Elements
           stripe={stripePromise}
           options={{ clientSecret, appearance: { theme: "stripe" } }}
@@ -76,7 +83,11 @@ export default function StripePaymentForm({ total }: { total: CartMoney }) {
         </Elements>
       ) : (
         <button type="button" onClick={initializePayment} disabled={loading}>
-          {loading ? "Preparing secure payment…" : `Continue to pay ${formatMoney(total)}`}
+          {loading
+            ? "Preparing payment…"
+            : stripeConfigured
+              ? `Continue to pay ${formatMoney(total)}`
+              : `Check payment provider · ${formatMoney(total)}`}
         </button>
       )}
       {error ? (

@@ -87,15 +87,21 @@ export function resolveCheckoutProvider(
   );
   if (!available.length) return undefined;
 
-  const stripe = available.find((provider) =>
-    typeof provider.id === "string" && provider.id.startsWith(STRIPE_PROVIDER_PREFIX),
-  );
-  if (stripe) return stripe;
-
-  const system = available.find((provider) =>
-    typeof provider.id === "string" && provider.id.startsWith(SYSTEM_PROVIDER_PREFIX),
-  );
+  const system = available.find((provider) => {
+    if (typeof provider.id !== "string") return false;
+    return (
+      provider.id === "pp_system" ||
+      provider.id === "pp_system_default" ||
+      provider.id.startsWith(SYSTEM_PROVIDER_PREFIX)
+    );
+  });
   if (system) return system;
+
+  const stripe = available.find((provider) => {
+    if (typeof provider.id !== "string") return false;
+    return provider.id === STRIPE_PROVIDER_ID || provider.id.startsWith(STRIPE_PROVIDER_PREFIX);
+  });
+  if (stripe) return stripe;
 
   return available[0];
 }
@@ -284,7 +290,9 @@ export async function createStripePaymentSession(cartId: string): Promise<{
     .payment_providers ?? [];
   const provider = resolveCheckoutProvider(providers);
   if (!provider?.id) {
-    throw new Error("No payment provider is configured for this checkout.");
+    throw new Error(
+      "No payment provider is configured for this checkout. Ensure the Malaysia region includes a Medusa system payment provider (pp_system_default) or a Stripe provider.",
+    );
   }
 
   const { payment_collection: collection } = await sdk().store.payment.initiatePaymentSession(

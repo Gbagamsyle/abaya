@@ -7,6 +7,7 @@ const SAFE_CHECKOUT_ERRORS = new Set([
   "Your bag is empty.",
   "Complete your contact and delivery details before payment.",
   "This order total cannot be paid by card.",
+  "No payment provider is configured for this checkout. Ensure the Malaysia region includes a Medusa system payment provider (pp_system_default) or a Stripe provider.",
 ]);
 
 type MedusaRequestError = Error & { status?: number };

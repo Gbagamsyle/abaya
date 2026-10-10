@@ -28,17 +28,21 @@ test("payment session rejects zero or invalid Medusa totals", () => {
   );
 });
 
-test("payment provider selection prefers Stripe when available and falls back to the Medusa system provider", () => {
+test("payment provider selection prefers the Medusa system provider over Stripe when both are available", () => {
   assert.equal(
     resolveCheckoutProvider([
       { id: "pp_system_default" },
       { id: "pp_stripe_stripe" },
     ])?.id,
-    "pp_stripe_stripe",
+    "pp_system_default",
   );
   assert.equal(
-    resolveCheckoutProvider([{ id: "pp_system_default" }])?.id,
-    "pp_system_default",
+    resolveCheckoutProvider([{ id: "pp_system" }])?.id,
+    "pp_system",
+  );
+  assert.equal(
+    resolveCheckoutProvider([{ id: "pp_stripe_stripe" }])?.id,
+    "pp_stripe_stripe",
   );
   assert.equal(resolveCheckoutProvider([]), undefined);
 });
